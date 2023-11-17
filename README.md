@@ -14,6 +14,6 @@ listed below.
 
  * When adding code, it is suggested to include either a README or provide sufficient comments in the code which details basic usage,
    inputs, outputs, and so on.
- * There are several directories corresponding to the different focus groups within the EIC (e.g. Jets/Heavy Flavor, Tracking, etc.).
+ * There are several directories corresponding to the different focus groups within the EIC (e.g. JetsAndHF, Tracking, etc.).
    In order to make it easier for others to find, it is suggested that you add your code to the relevant directory.
  * While no pull requests are required, we do ask that you follow standard etiquette for contributing to a shared repository.
