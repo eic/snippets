@@ -1,10 +1,10 @@
-# eic-utils
+# snippets
 
-A repository to host user-created macros, scripts, plugins, and more related to the software, hardware data, and analysis at the Electron-Ion Collider (EIC).
+A repository to host user-created snippets: macros, scripts, plugins, and more related to software, hardware data, and analysis at the Electron-Ion Collider (EIC).
 
-[![Monthly Commits](https://img.shields.io/github/commit-activity/m/eic/eic-utils.svg)](https://github.com/eic/eic-utils/commits/main)
-[![Last Commit](https://img.shields.io/github/last-commit/eic/eic-utils.svg)](https://github.com/eic/eic/eic-utils/commits/main)
-[![Download Size](https://img.shields.io/github/languages/code-size/eic/eic-utils.svg)](https://github.com/eic/eic-utils/archive/main.zip)
+[![Monthly Commits](https://img.shields.io/github/commit-activity/m/eic/snippets.svg)](https://github.com/eic/snippets/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/eic/snippets.svg)](https://github.com/eic/eic/snippets/commits/main)
+[![Download Size](https://img.shields.io/github/languages/code-size/eic/snippets.svg)](https://github.com/eic/snippets/archive/main.zip)
 
 All members of the [EIC Github Organization](https://github.com/eic) have read/write access and are welcome to push your
 code directly to the main branch, no pull requests required!  It is strongly encouraged, however, to follow the recommendations
