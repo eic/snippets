@@ -1,6 +1,5 @@
 #include <podio/Frame.h>
 #include <podio/ROOTFrameReader.h>
-//#include <edm4hep/vector_utils.h>
 #include <edm4eic/ReconstructedParticleCollection.h>
 
 void test(std::string input_file="2024-01-10T21-11-08+00-00_0179803eb6f56c96c459a6af4f187d9d88205f56/rec_dis_18x275_minQ2=1000_craterlake.edm4eic.root") {
