@@ -1,0 +1,72 @@
+/control/verbose 2
+/control/saveHistory
+/run/verbose 2
+/vis/scene/create
+#/vis/open OGLSX 1200x900-0+0
+/vis/open OGLSX 1200x900-0+0
+
+# Draw geometry:
+/vis/drawVolume
+#
+# Specify view angle:
+#/vis/viewer/set/viewpointVector -1 0 0
+#/vis/viewer/set/lightsVector -1 0 0
+#
+# Specify style (surface, wireframe, auxiliary edges,...)
+/vis/viewer/set/style wireframe
+/vis/viewer/set/auxiliaryEdge false
+/vis/viewer/set/lineSegmentsPerCircle 100
+# increase display limit for more complex detectors
+/vis/ogl/set/displayListLimit 500000
+#/vis/viewer/set/viewpointThetaPhi 240 -10
+#/vis/viewer/set/viewpointThetaPhi 270 0 # Side view
+#/vis/viewer/set/viewpointThetaPhi 270 -89.9 # Top-down view
+/vis/viewer/set/viewpointThetaPhi 250 -50
+
+#/vis/viewer/set/pan [right-increment] [up-increment] [unit] default unit meter
+/vis/viewer/panTo -0.1 0.
+/vis/viewer/addCutawayPlane 0 0 0 m 1 0 0
+
+# Camera and lights commands
+#/vis/viewer/set/viewpointVector 0.000424748 4.92661e-16 1
+#/vis/viewer/set/upVector 0 -1 0
+#/vis/viewer/set/projection orthogonal
+#/vis/viewer/zoomTo 16.2111
+#/vis/viewer/scaleTo 1 1 1
+#/vis/viewer/set/targetPoint 47.7376 -0.585446 52.6602 cm
+
+# zooming by 4 makes it fill the display
+/vis/viewer/zoom 1.2
+# Output an empty detector
+/vis/viewer/flush
+# Draw trajectories at end of event, showing trajectory points as
+# markers of size 2 pixels
+/tracking/storeTrajectory 1
+/vis/scene/add/hits
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByCharge
+/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
+/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+# For example, select colour by particle ID
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set e- yellow
+/vis/modeling/trajectories/drawByParticleID-0/set e+ red
+/vis/modeling/trajectories/drawByParticleID-0/set pi- magenta
+/vis/modeling/trajectories/drawByParticleID-0/set pi+ magenta
+/vis/modeling/trajectories/drawByParticleID-0/set kaon- blue
+/vis/modeling/trajectories/drawByParticleID-0/set kaon+ blue
+/vis/modeling/trajectories/drawByParticleID-0/set proton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set anti_proton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set neutron white
+/vis/modeling/trajectories/drawByParticleID-0/set anti_neutron white
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set opticalphoton yellow
+/vis/modeling/trajectories/drawByParticleID-0/setRGBA opticalphoton 1 0.8 0 0.3
+# remove low energy stuff
+/vis/filtering/trajectories/create/attributeFilter
+/vis/filtering/trajectories/attributeFilter-0/setAttribute IMag
+/vis/filtering/trajectories/attributeFilter-0/addInterval 2 eV 1000 GeV
+/vis/scene/endOfEventAction accumulate
+/vis/viewer/flush
+/control/verbose 2
+/run/initialize
