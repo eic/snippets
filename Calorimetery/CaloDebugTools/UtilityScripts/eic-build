@@ -1,0 +1,25 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# 'eic-build'
+# Derek Anderson
+# 03.30.2023
+#
+# A simple script to build EICrecon,
+# a JANA plugin, or epic
+# -----------------------------------------------------------------------------
+
+if [ -z "$1" ]; then
+  cmake -S . -B build
+  cmake --build build --target install -- -j8
+  source bin/eicrecon-this.sh
+elif [ "$1" == "epic" ]; then
+  cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install
+  cmake --build build
+  cmake --install build
+  source install/setup.sh
+else
+  cmake -S $1 -B $1/build
+  cmake --build $1/build --target install -- -j8
+fi
+
+# end -------------------------------------------------------------------------
