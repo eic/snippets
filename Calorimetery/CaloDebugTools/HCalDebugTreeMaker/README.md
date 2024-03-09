@@ -1,27 +1,37 @@
-A simple JANA plugin to prepare trees which consolidate potentially useful information for
-debugging hadronic calorimeter software. Downstream of [this repo](https://github.com/ruse-traveler/HCalDebugTreeMaker/tree/main).
+Two simple JANA plugins to prepare trees which consolidate potentially useful information for
+debugging hadronic calorimeter software.
 
-Takes an edm4hep file as input, and produces two possible outputs: a "flat" tree and a "relational" tree.
+Both takes an edm4hep file as input, and both produce a single TTree as output.
 
- - **Flat Tree:** a tree which contains select information from all hadronic calorimeter clusters, cells, generated particles, and MC particles (i.e. the truth record).
- - **Relational Tree:** a tree which contains select information from all hadronic clusters and (1) the cells comprising those clusters, (2) the MC particles *associated* to those clusters, and (3) the MC particles *contributing* to those clusters. Belonging relationships between clusters and cells/particles are encoded in indices running parallel to the relevant branches.
+ - `FlatHCalDebugTreeMaker:` produces a tree which contains select information from all hadronic
+    calorimeter clusters, cells, generated particles, and MC particles (i.e. the truth record).
+ - `RelationalHCalDebugTreeMaker:` a tree which contains select information from all hadronic
+    clusters and the following:
+     (1) the cells comprising those clusters,
+     (2) the MC particles *associated* to those clusters, and
+     (3) the MC particles *contributing* to those clusters.
 
-(Derived from code by Rederike Bock. Thanks!!)
+In the case of the latter, belonging relationships between clusters and cells/particles are encoded
+in indices running parallel to the relevant branches.
 
-### JBarrelHCalTreeMaker Usage
+(Initially derived from code by Rederike Bock. Thanks!!)
 
-To build:
+### {Flat,Relational}HCalDebugTreeMaker Usage
+
+To build either:
 
 ```
 # after compiling EICrecon, create plugin by:
-eicmkplugin.py JBarrelHCalTreeMaker
-cp <path to this repo>/JBarrelHCalTreeMakerProcessor.* $EICrecon_ROOT/JBarrelHCalTreeMaker/
+eicmkplugin.py <tree>HCalDebugTreeMaker
+cp <path-to-this-repo>/<tree>HCalDebugTreeMaker.* $EICrecon_ROOT/<tree>HCalDebugTreeMaker/
 
 # then compile plugin by:
-./eic-build JBarrelHCalTreeMaker -B JBarrelHCalTreeMaker/build
+./eic-build -B <tree>HCalDebugTreeMaker
 
 # run EICrecon with macro by:
-eicrecon -Pplugins=JBarrelHCalTreeMaker <input edm4hep file>
+eicrecon -Pplugins=<tree>HCalDebugTreeMaker <input-edm4hep-file>
 ```
 
-Note that the `eic-build` script is included in the `scripts` directory of this repo for convenience. Options are set by changing the relevant parameters in `JBarrelHCalTreeMaker.h` and then recompiling.
+Note that the `eic-build` script is included in the `scripts` directory of this repo for convenience.i
+Options are set in the `Config` struct at the top of either plugin header; make changes and then
+recompile.
