@@ -58,7 +58,6 @@ class FlatHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoot {
     std::string sPlugin;
     std::string sMCPars;
     std::string sGenPars;
-    std::string sSimHits;
     std::string sRecHits;
     std::string sClusters;
     std::vector<std::string> sFields;
@@ -66,7 +65,6 @@ class FlatHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoot {
     "FlatHCalDebugTreeMaker",
     "MCParticles",
     "GeneratedParticles",
-    "HcalBarrelHits",
     "HcalBarrelRecHits",
     "HcalBarrelClusters",
     {"eta", "phi"}
@@ -104,7 +102,6 @@ class FlatHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoot {
     // data objects we need from JANA
     PrefetchT<edm4hep::MCParticle>            m_mcPars   = {this, m_config.sMCPars.data()};
     PrefetchT<edm4eic::ReconstructedParticle> m_genPars  = {this, m_config.sGenPars.data()};
-    PrefetchT<edm4hep::SimCalorimeterHit>     m_simHits  = {this, m_config.sSimHits.data()};
     PrefetchT<edm4eic::CalorimeterHit>        m_recHits  = {this, m_config.sRecHits.data()};
     PrefetchT<edm4eic::Cluster>               m_clusters = {this, m_config.sClusters.data()};
 

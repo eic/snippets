@@ -297,7 +297,7 @@ void FlatHCalDebugTreeMakerProcessor::FillMCVariables(const edm4hep::MCParticle*
   m_mcTime.push_back( mc -> getTime() );
   return;
 
-}  // end 'FillMCVariables(edm4hep::MCParticle)'
+}  // end 'FillMCVariables(edm4hep::MCParticle*)'
 
 
 
@@ -320,7 +320,7 @@ void FlatHCalDebugTreeMakerProcessor::FillGenVariables(const edm4eic::Reconstruc
   m_genMass.push_back( gen -> getMass() );
   return;
 
-}  // end 'FillGenVariables(const edm4eic::ReconstructedParticle)'
+}  // end 'FillGenVariables(const edm4eic::ReconstructedParticle*)'
 
 
 
@@ -348,7 +348,7 @@ void FlatHCalDebugTreeMakerProcessor::FillCellVariables(const edm4eic::Calorimet
   m_cellIndexC.push_back( indices[2] );
   return;
 
-}  // end 'FillCellVariables(edm4eic::CalorimeterHit)' 
+}  // end 'FillCellVariables(edm4eic::CalorimeterHit*)' 
 
 
 
@@ -369,7 +369,7 @@ void FlatHCalDebugTreeMakerProcessor::FillClusterVariables(const edm4eic::Cluste
   m_clustTime.push_back( clust -> getTime() );
   return;
 
-}  // end 'FillClusterVariables(edm4eic::Cluster)'
+}  // end 'FillClusterVariables(edm4eic::Cluster*, int64_t)'
 
 
 
@@ -382,7 +382,7 @@ void FlatHCalDebugTreeMakerProcessor::GetCellIndices(const int64_t cellID, std::
   }
   return;
 
-}  // end 'GetCellIndices(int64_t, vector<short>)'
+}  // end 'GetCellIndices(int64_t, vector<short>&)'
 
 
 
