@@ -1,0 +1,28 @@
+# -----------------------------------------------------------------------------
+# 'RunDD4hepOnCondor.job'
+# Derek Anderson
+# 03.21.2024
+#
+# Condor job file to run `RunDD4hep.job` via condor.
+# -----------------------------------------------------------------------------
+
+# generic parameters
+Universe     = vanilla
+notification = Never
+
+# executable parameters
+Executable           = RunDD4hepInSerial.rb
+Arguments            = $(iterations) $(label) $(steering)
+PeriodicHold         = ((NumJobStarts >= 1) && (JobStatus == 1))
+Initialdir           = ./
+request_memory       = 8GB
+
+# output parameters
+Output = $(Initialdir)/log/test_$(process).out
+Error  = $(Initialdir)/log/test_$(process).err
+Log    = $(Initialdir)/log/test_$(process).log
+
+# queue jobs
+Queue iterations, label, steering from test.job_parameters.list
+
+# end -------------------------------------------------------------------------
