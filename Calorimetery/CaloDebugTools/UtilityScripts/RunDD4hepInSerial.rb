@@ -31,7 +31,7 @@ END {
   numiter = ARGV[0]
   input   = "forJetInitFix.e10h11pipXpim.d14m3y2024.hepmc"
   output  = "testOutOnLocal.d22m3y2024.edm4hep.root"
-  steerer = "steering.forTowerVsTileCalibCheck_e10th45pim.py"
+  steerer = ARGV[2]
 
   # input, output, and runnning directories
   in_dir  = "/sphenix/user/danderson/"
@@ -39,22 +39,21 @@ END {
   run_dir = "/sphenix/u/danderson/eic"
 
   # i/o parameters for condor running
-  #out_prefix = "testOutOnCondor"
-  out_prefix = "testOutOnLocal"
-  out_label  = "run0"
+  out_prefix = "testOutOnCondor"
+  out_label  = ARGV[1]
   out_index  = "file"
   out_suffix = ".d22m3y2024.edm4hep.root"
 
   # fixed parameters ----------------------------------------------------------
 
   # job parameters
-  numevts = 100
+  numevts = 1000
   compact = "/opt/detector/epic-nightly/share/epic/epic.xml"
 
   # environment parameters
-  exec  = "ddsim"
+  exec  = "npsim"
   shell = "/sphenix/u/danderson/scripts/eic-shell"
-  setup = "/sphenix/u/danderson/scripts/initialize-eic-detectors"
+  setup = "/opt/detector/setup.sh"
 
   # script names
   runner    = "RunDD4hepInShell.sh"
