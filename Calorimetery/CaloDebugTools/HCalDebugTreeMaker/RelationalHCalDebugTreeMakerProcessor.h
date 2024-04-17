@@ -66,11 +66,11 @@ class RelationalHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoo
     "RelationalHCalDebugTreeMaker",
     "MCParticles",
     "GeneratedParticles",
-    "HcalBarrelHits",
-    "HcalBarrelRecHits",
-    "HcalBarrelClusters",
-    "HcalBarrelClusterAssociations",
-    {"eta", "phi"}
+    "HcalEndcapNHits",
+    "HcalEndcapNRecHits",
+    "HcalEndcapNClusters",
+    "HcalEndcapNClusterAssociations",
+    {"layer", "slice"}
   };  // end Config
 
   // struct to hold class-wise constants

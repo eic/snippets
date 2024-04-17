@@ -33,7 +33,6 @@ void RelationalHCalDebugTreeMakerProcessor::InitWithGlobalRootLock(){
   // create directory
   m_pluginDir = rootfile -> mkdir(m_config.sPlugin.data());
   m_pluginDir -> cd();
-
   // reset tree variables
   ResetVariables();
 
@@ -150,7 +149,7 @@ void RelationalHCalDebugTreeMakerProcessor::InitializeDecoder() {
   // make sure readout is available
   dd4hep::IDDescriptor descriptor;
   try {
-    descriptor  = detector -> readout("HcalBarrelHits").idSpec();
+    descriptor  = detector -> readout(m_config.sSimHits.data()).idSpec();
   } catch (const std::runtime_error &err) {
     throw std::runtime_error("PANIC: readout class is not in output!");
   }
