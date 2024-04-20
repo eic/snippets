@@ -1,3 +1,5 @@
+# Flat/RelationalHCalDebugTreeMaker
+
 Two simple JANA plugins to prepare trees which consolidate potentially useful information for
 debugging hadronic calorimeter software.
 
@@ -23,7 +25,7 @@ To build either:
 ```
 # after compiling EICrecon, create plugin by:
 eicmkplugin.py <tree>HCalDebugTreeMaker
-cp <path-to-this-repo>/<tree>HCalDebugTreeMaker.* $EICrecon_ROOT/<tree>HCalDebugTreeMaker/
+cp <path-to-this-repo>/<tree>HCalDebugTreeMakerProcessor.* $EICrecon_ROOT/<tree>HCalDebugTreeMaker/
 
 # then compile plugin by:
 cmake -S <tree>HCalDebugTreeMaker -B <tree>HCalDebugTreeMaker/buid
