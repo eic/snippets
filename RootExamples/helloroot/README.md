@@ -1,6 +1,6 @@
 ### Helloroot
 
-A small sekeleton to demonstrate how to link standalone C++ code to ROOT libraries. To use, rename and adapt the source files and `CMakeLists.txt` to your project.
+A small skeleton to demonstrate how to link standalone C++ code to ROOT libraries. To use, rename and adapt the source files and `CMakeLists.txt` to your project.
 
 To build using cmake, create a build directory, navigate to it and run cmake. e.g.:
 
