@@ -16,7 +16,7 @@ Both takes an edm4hep file as input, and both produce a single TTree as output.
 In the case of the latter, belonging relationships between clusters and cells/particles are encoded
 in indices running parallel to the relevant branches.
 
-(Initially derived from code by Rederike Bock. Thanks!!)
+(Initially derived from code by Frederike Bock. Thanks!!)
 
 ### {Flat,Relational}HCalDebugTreeMaker Usage
 
