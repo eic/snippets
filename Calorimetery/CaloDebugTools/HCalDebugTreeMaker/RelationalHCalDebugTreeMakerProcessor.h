@@ -76,7 +76,7 @@ class RelationalHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoo
   // struct to hold class-wise constants
   struct Const {
     size_t nFieldMax;
-  } m_const = {3};
+  } m_const = {6};
 
   public:
 
@@ -145,6 +145,9 @@ class RelationalHCalDebugTreeMakerProcessor: public JEventProcessorSequentialRoo
     std::vector<short>    m_cellIndexA;
     std::vector<short>    m_cellIndexB;
     std::vector<short>    m_cellIndexC;
+    std::vector<short>    m_cellIndexE;
+    std::vector<short>    m_cellIndexF;
+    std::vector<short>    m_cellIndexG;
 
     // mc particle associated to cluster members
     std::vector<uint64_t> m_assocClustIndex;

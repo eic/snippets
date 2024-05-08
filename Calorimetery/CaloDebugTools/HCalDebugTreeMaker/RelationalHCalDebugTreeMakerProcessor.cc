@@ -203,6 +203,9 @@ void RelationalHCalDebugTreeMakerProcessor::InitializeTree() {
   m_outTree -> Branch("CellIndexA",        &m_cellIndexA);
   m_outTree -> Branch("CellIndexB",        &m_cellIndexB);
   m_outTree -> Branch("CellIndexC",        &m_cellIndexC);
+  m_outTree -> Branch("CellIndexE",        &m_cellIndexE);
+  m_outTree -> Branch("CellIndexF",        &m_cellIndexF);
+  m_outTree -> Branch("CellIndexG",        &m_cellIndexG);
   m_outTree -> Branch("AssocClustIndex",   &m_assocClustIndex);
   m_outTree -> Branch("AssocGenStat",      &m_assocGenStat);
   m_outTree -> Branch("AssocSimStat",      &m_assocSimStat);
@@ -268,6 +271,9 @@ void RelationalHCalDebugTreeMakerProcessor::ResetVariables() {
   m_cellIndexA.clear();
   m_cellIndexB.clear();
   m_cellIndexC.clear();
+  m_cellIndexE.clear();
+  m_cellIndexF.clear();
+  m_cellIndexG.clear();
 
   // reset mc particle associated to cluster variables
   m_assocClustIndex.clear();
@@ -361,6 +367,9 @@ void RelationalHCalDebugTreeMakerProcessor::FillCellVariables(const edm4eic::Cal
   m_cellIndexA.push_back( indices[0] );
   m_cellIndexB.push_back( indices[1] );
   m_cellIndexC.push_back( indices[2] );
+  m_cellIndexE.push_back( indices[3] );
+  m_cellIndexF.push_back( indices[4] );
+  m_cellIndexG.push_back( indices[5] );
   return;
 
 }  // end 'FillCellVariables(edm4eic::CalorimeterHit, int64_t)' 

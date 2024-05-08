@@ -133,7 +133,7 @@ void FlatHCalDebugTreeMakerProcessor::InitializeDecoder() {
   // make sure readout is available
   dd4hep::IDDescriptor descriptor;
   try {
-    descriptor  = detector -> readout("HcalBarrelHits").idSpec();
+    descriptor  = detector -> readout(m_config.sSimHits.data()).idSpec();
   } catch (const std::runtime_error &err) {
     throw std::runtime_error("PANIC: readout class is not in output!");
   }
@@ -198,6 +198,9 @@ void FlatHCalDebugTreeMakerProcessor::InitializeTree() {
   m_outTree -> Branch("CellIndexA",   &m_cellIndexA);
   m_outTree -> Branch("CellIndexB",   &m_cellIndexB);
   m_outTree -> Branch("CellIndexC",   &m_cellIndexC);
+  m_outTree -> Branch("CellIndexE",   &m_cellIndexE);
+  m_outTree -> Branch("CellIndexF",   &m_cellIndexF);
+  m_outTree -> Branch("CellIndexG",   &m_cellIndexG);
   m_outTree -> Branch("ClustIndex",   &m_clustIndex);
   m_outTree -> Branch("ClustNCells",  &m_clustNCells);
   m_outTree -> Branch("ClustEne",     &m_clustEne);
@@ -254,6 +257,9 @@ void FlatHCalDebugTreeMakerProcessor::ResetVariables() {
   m_cellIndexA.clear();
   m_cellIndexB.clear();
   m_cellIndexC.clear();
+  m_cellIndexE.clear();
+  m_cellIndexF.clear();
+  m_cellIndexG.clear();
 
   // reset cluster variables
   m_clustNCells.clear();
@@ -346,6 +352,9 @@ void FlatHCalDebugTreeMakerProcessor::FillCellVariables(const edm4eic::Calorimet
   m_cellIndexA.push_back( indices[0] );
   m_cellIndexB.push_back( indices[1] );
   m_cellIndexC.push_back( indices[2] );
+  m_cellIndexE.push_back( indices[2] );
+  m_cellIndexF.push_back( indices[3] );
+  m_cellIndexG.push_back( indices[5] );
   return;
 
 }  // end 'FillCellVariables(edm4eic::CalorimeterHit*)' 
