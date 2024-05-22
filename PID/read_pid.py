@@ -12,7 +12,7 @@ name_lookup = {
     desc.constantAsLong("ForwardRICH_ID") : "DRICH",
 }
 
-def read_pdg(input_file="simu/podio_output.root"):
+def read_pid(input_file="simu/podio_output.root"):
     reader = get_reader(input_file)
     for i, frame in enumerate(reader.get("events")):
         print(f"event {i}")
@@ -22,4 +22,4 @@ def read_pdg(input_file="simu/podio_output.root"):
                 detector_name = name_lookup.get(partid.getType())
                 print(f"\tdetector {detector_name} PDG {partid.getPDG()} probability {partid.getLikelihood()}")
 
-read_pdg()
+read_pid()

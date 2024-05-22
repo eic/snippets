@@ -2,7 +2,7 @@
 #include <podio/Frame.h>
 #include <podio/ROOTFrameReader.h>
 
-void read_pdg(std::string input_file="simu/podio_output.root") {
+void read_pid(std::string input_file="simu/podio_output.root") {
     auto reader = podio::ROOTFrameReader();
     reader.openFile(input_file);
     for (size_t i = 0; i < reader.getEntries(podio::Category::Event); i++) {
