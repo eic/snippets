@@ -18,6 +18,7 @@ def read_pid(input_file="simu/podio_output.root"):
         print(f"event {i}")
         for part in frame.get("ReconstructedChargedParticles"):
             print(f"particle energy {part.getEnergy()}")
+            print(f"PID PDG {part.getPDG()}")
             for partid in part.getParticleIDs():
                 detector_name = name_lookup.get(partid.getType())
                 print(f"\tdetector {detector_name} PDG {partid.getPDG()} probability {partid.getLikelihood()}")
