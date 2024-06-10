@@ -6,8 +6,8 @@ A short(ish) ROOT macro illustrating two points:
     distance in eta-phi; and
   - How to use the ROOT-based PODIO Frame Reader.
 
-Reads in EICrecon output (`*.podio.root`). User options can be set in the `Options`
-struct defined before the macro body.
+Reads in EICrecon output (`*.podio.root`, `*.tree.edm4eic.root`). User options can
+be set in the `Options` struct defined before the macro body.
 
 
 ## Dependencies
