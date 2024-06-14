@@ -14,8 +14,13 @@ This macro demonstrates how to read the eicrecon output using the TTreeReaderArr
 ### Prerequisites
 
 - A version of Root that supports TTreeReader (can be local or inside eic-shell)
-- A locally accessible copy of an eicrecon output tree(s)
 
 ### Usage
 
-root -l -q jetREader_TTreeReader.C'("/path/to/eicrecon/output/file")'
+root -l -q jetReader_TTreeReader.C'("/path/to/eicrecon/output/file")'
+
+Note: The specified path can be the xrootd streaming server. For example:
+
+root://dtn-eic.jlab.org//work/eic2/EPIC/RECO/24.05.0/epic_craterlake/DIS/NC/18x275/minQ2=10/pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.2501.eicrecon.tree.edm4eic.root
+
+Wildcards are also supported.
