@@ -86,6 +86,10 @@ void CheckClusterSplittingProcessor::ProcessSequential(const shared_ptr<const JE
     if (eSum <= 0.) continue;
 
     // run calculations
+    int32_t nClusters  = 0;
+    int32_t nClustAb90 = 0;
+    int32_t nClustBe90 = 0;
+    int32_t nClustRec  = 0;
     for (auto cluster : clusters) {
 
       // create struct to hold histogram content
@@ -130,10 +134,11 @@ void CheckClusterSplittingProcessor::ProcessSequential(const shared_ptr<const JE
         const double dEta = (projEta - cContent.eta);
         const double dPhi = (projPhi - cContent.phi);
 
-        // grab remaining info
+        // grab remaining projection info
         tContent.dr     = hypot(dEta, dPhi);
         tContent.drSig  = hypot(dEta/widths.first, dPhi/widths.second);
-        tContent.eOverP = tContent.p / cluster.getEnergy();
+        tContent.eOverP = cluster.getEnergy() / tContent.p;
+        tContent.deposit = tContent.p * m_config.vecAvgEP[iCalo];
 
         // fill all projection histograms
         FillTrkHistograms(iCalo, Hist::TType::TrkAll, tContent);
@@ -149,30 +154,73 @@ void CheckClusterSplittingProcessor::ProcessSequential(const shared_ptr<const JE
 
       }  // end projection loop
 
-      // grab info of matched cluster
+      // grab info of matched projection
       Hist::TrkContent mContent;
       if (foundMatch) {
         mContent.GetInfo( m_vecTrkProj.at(iMatch) );
-        mContent.dr     = drMin;
-        mContent.drSig  = drSigMin;
-        mContent.eOverP = mContent.p / cluster.getEnergy();
+        mContent.dr      = drMin;
+        mContent.drSig   = drSigMin;
+        mContent.eOverP  = cluster.getEnergy() / mContent.p;
+        mContent.deposit = mContent.p * m_config.vecAvgEP[iCalo];
         FillTrkHistograms(iCalo, Hist::TType::TrkMatch, mContent);
       }
 
-      // grab cluster remaining information
+      // calculate significance of cluster energy
+      const double sigma = (cluster.getEnergy() - mContent.deposit) / m_config.vecSigEP[iCalo];
+
+      // grab remaining cluster information
       cContent.nProj  = nProj;
       cContent.frac   = cluster.getEnergy() / eSum;
       cContent.purity = cluster.getEnergy() / ePar;
-      cContent.eOverP = foundMatch ? mContent.eOverP : -1.;
+      cContent.eOverP = foundMatch ? mContent.eOverP : numeric_limits<double>::max();
+      cContent.sigma  = foundMatch ? sigma : numeric_limits<double>::max();
+
+      // check purity
+      const bool isBelow90 = (cContent.purity < 0.9);
+
+      // if purity < 90%, see if we can recover 90%
+      bool    didRecover = false;
+      float   drRecover  = numeric_limits<double>::max();
+      int32_t nRecover   = numeric_limits<int32_t>::max();
+      if (isBelow90) {
+
+        // build lists of clusters vs. energy, delta-r, and if already checked
+        GetClustersAndDr(clusters, cContent, cluster.getObjectID().index);
+
+        // now try to recover if there are other clusters to check
+        const uint32_t nToCheck = m_mapClustToDr.size();
+        if (nToCheck > 0) {
+          TryToRecover(cContent.ene, ePar, didRecover, drRecover, nRecover);
+        }
+      }  // end if purity below 90%
+
+      // grab recover info
+      cContent.nAdd90  = nRecover;
+      cContent.drAdd90 = drRecover;
+      if (didRecover) {
+        ++nClustRec;
+      }
 
       // fill cluster histograms
+      if (isBelow90) {
+        FillCalHistograms(iCalo, Hist::CType::CalBelow90, cContent);
+        ++nClustBe90;
+      } else {
+        FillCalHistograms(iCalo, Hist::CType::CalAbove90, cContent);
+        ++nClustAb90;
+      }
       FillCalHistograms(iCalo, Hist::CType::CalAll, cContent);
+      ++nClusters;
+
 
     }  // end cluster loop
 
     // set event level-information
     Hist::EvtContent eContent;
-    eContent.nClust = clusters.size();
+    eContent.nClust = nClusters;
+    eContent.nCl90  = nClustAb90;
+    eContent.nClB90 = nClustBe90;
+    eContent.nClRec = nClustRec;
     eContent.ePar   = ePar;
     eContent.eLead  = eLead;
     eContent.eTot   = eSum;
@@ -205,13 +253,16 @@ void CheckClusterSplittingProcessor::BuildEvtHistograms() {
 
   // histogram binning/labales
   VecAxisDef vecEvtAxes = {
-    make_pair("N_{clust}",                make_tuple(100, 0., 100.)),
+    make_pair("N_{clust}",                make_tuple(100, -0.5, 99.5)),
     make_pair("E_{par} [GeV]",            make_tuple(100, 0., 50.)),
     make_pair("E_{lead} [GeV]",           make_tuple(100, 0., 50.)),
     make_pair("#SigmaE_{clust} [GeV]",    make_tuple(100, 0. ,50.)),
     make_pair("E_{lead}/#SigmaE_{clust}", make_tuple(250, 0., 5.)),
     make_pair("E_{lead}/E_{par}",         make_tuple(250, 0., 5.)),
-    make_pair("#SigmaE_{clust}/E_{par}",  make_tuple(250, 0., 5.))
+    make_pair("#SigmaE_{clust}/E_{par}",  make_tuple(250, 0., 5.)),
+    make_pair("N_{clust}^{>90%}",         make_tuple(100, -0.5, 99.5)),
+    make_pair("N_{clust}^{<90%}",         make_tuple(100, -0.5, 99.5)),
+    make_pair("N_{clust}^{recovered}",    make_tuple(100, -0.5, 99.5))
   };
 
   // type labels
@@ -221,13 +272,16 @@ void CheckClusterSplittingProcessor::BuildEvtHistograms() {
 
   // histogram definitions
   VecHistDef1D vecEvtDef1D = {
-    make_tuple("EvtNClust",         vecEvtAxes[Hist::EVar::EvtNCl]),
-    make_tuple("EvtParEne",         vecEvtAxes[Hist::EVar::EvtPE]),
-    make_tuple("EvtLeadEne",        vecEvtAxes[Hist::EVar::EvtLE]),
-    make_tuple("EvtTotalEne",       vecEvtAxes[Hist::EVar::EvtTE]),
-    make_tuple("EvtLeadTotEneFrac", vecEvtAxes[Hist::EVar::EvtLT]),
-    make_tuple("EvtLeadParEneFrac", vecEvtAxes[Hist::EVar::EvtLP]),
-    make_tuple("EvtTotParEneFrac",  vecEvtAxes[Hist::EVar::EvtTP]),
+    make_tuple("EvtNClust",          vecEvtAxes[Hist::EVar::EvtNCl]),
+    make_tuple("EvtParEne",          vecEvtAxes[Hist::EVar::EvtPE]),
+    make_tuple("EvtLeadEne",         vecEvtAxes[Hist::EVar::EvtLE]),
+    make_tuple("EvtTotalEne",        vecEvtAxes[Hist::EVar::EvtTE]),
+    make_tuple("EvtLeadTotEneFrac",  vecEvtAxes[Hist::EVar::EvtLT]),
+    make_tuple("EvtLeadParEneFrac",  vecEvtAxes[Hist::EVar::EvtLP]),
+    make_tuple("EvtTotParEneFrac",   vecEvtAxes[Hist::EVar::EvtTP]),
+    make_tuple("EvtNClustAbove90",   vecEvtAxes[Hist::EVar::EvtNA90]),
+    make_tuple("EvtNClustBelow90",   vecEvtAxes[Hist::EVar::EvtNB90]),
+    make_tuple("EvtNClustRecovered", vecEvtAxes[Hist::EVar::EvtNR])
   };
 
   // make histograms
@@ -282,7 +336,8 @@ void CheckClusterSplittingProcessor::BuildTrkHistograms() {
     make_pair("p [GeV/c]",       make_tuple(100, 0., 50.)),
     make_pair("#Deltar",         make_tuple(500, 0., 5.)),
     make_pair("#Delta#tilde{r}", make_tuple(500, 0., 5.)),
-    make_pair("E/p",             make_tuple(250, 0., 5.))
+    make_pair("E/p",             make_tuple(250, 0., 5.)),
+    make_pair("p #times <E/p>",  make_tuple(100, 0., 50.))
   };
 
   // type labels
@@ -301,7 +356,8 @@ void CheckClusterSplittingProcessor::BuildTrkHistograms() {
     make_tuple("TrkMom",       vecTrkAxes[Hist::TVar::TrkP]),
     make_tuple("TrkDeltaR",    vecTrkAxes[Hist::TVar::TrkDR]),
     make_tuple("TrkDeltaRSig", vecTrkAxes[Hist::TVar::TrkDRS]),
-    make_tuple("TrkEoverP",    vecTrkAxes[Hist::TVar::TrkEP])
+    make_tuple("TrkEoverP",    vecTrkAxes[Hist::TVar::TrkEP]),
+    make_tuple("TrkDeposit",   vecTrkAxes[Hist::TVar::TrkDep])
   };
   VecHistDef2D vecTrkDef2D = {
     make_tuple("TrkPosYvsX",   vecTrkAxes[Hist::TVar::TrkRX],  vecTrkAxes[Hist::TVar::TrkRY]),
@@ -388,8 +444,8 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
 
   // histogram binning/labales
   VecAxisDef vecCalAxes = {
-    make_pair("N_{hit}",                   make_tuple(50, 0., 50.)),
-    make_pair("N_{proj}",                  make_tuple(20, 0., 20.)),
+    make_pair("N_{hit}",                   make_tuple(50, -0.5, 49.5)),
+    make_pair("N_{proj}",                  make_tuple(20, -0.5, 19.5)),
     make_pair("r_{x} [mm]",                make_tuple(3000, -3000., 3000.)),
     make_pair("r_{y} [mm]",                make_tuple(3000, -3000., 3000.)),
     make_pair("r_{z} [mm]",                make_tuple(3000, -3000., 3000.)),
@@ -398,12 +454,17 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
     make_pair("E [GeV]",                   make_tuple(100, 0., 50.)),
     make_pair("E_{clust}/#SigmaE_{clust}", make_tuple(250, 0., 5.)),
     make_pair("E_{clust}/E_{par}",         make_tuple(250, 0., 5.)),
-    make_pair("E/p",                       make_tuple(250, 0., 5.))
+    make_pair("E/p",                       make_tuple(250, 0., 5.)),
+    make_pair("S(E_{clust})",              make_tuple(20, -10., 10.)),
+    make_pair("N_{90}",                    make_tuple(100, -0.5, 99.5)),
+    make_pair("#Deltar_{90}",              make_tuple(60, 0., 3.))
   };
 
   // type labels
   vector<string> vecCalTypes = {
-    "All"
+    "All",
+    "AboveNinety",
+    "BelowNinety"
   };
 
   // histogram definitions
@@ -418,14 +479,19 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
     make_tuple("ClustEne",     vecCalAxes[Hist::CVar::CalE]),
     make_tuple("ClustEpsilon", vecCalAxes[Hist::CVar::CalEps]),
     make_tuple("ClustPurity",  vecCalAxes[Hist::CVar::CalRho]),
-    make_tuple("ClustEoverP",  vecCalAxes[Hist::CVar::CalEP])
+    make_tuple("ClustEoverP",  vecCalAxes[Hist::CVar::CalEP]),
+    make_tuple("ClustCutSig",  vecCalAxes[Hist::CVar::CalSig]),
+    make_tuple("ClustNAdd90",  vecCalAxes[Hist::CVar::CalN90]),
+    make_tuple("ClustDrAdd90", vecCalAxes[Hist::CVar::CalDR90])
   };
   VecHistDef2D vecCalDef2D = {
     make_tuple("ClustPosYvsX",  vecCalAxes[Hist::CVar::CalRX], vecCalAxes[Hist::CVar::CalRY]),
     make_tuple("ClustEneVsEta", vecCalAxes[Hist::CVar::CalH],  vecCalAxes[Hist::CVar::CalE]),
     make_tuple("ClustEneVsPhi", vecCalAxes[Hist::CVar::CalF],  vecCalAxes[Hist::CVar::CalF]),
     make_tuple("ClustEtaVsPhi", vecCalAxes[Hist::CVar::CalF],  vecCalAxes[Hist::CVar::CalH]),
-    make_tuple("ClustPurVsEne", vecCalAxes[Hist::CVar::CalE],  vecCalAxes[Hist::CVar::CalRho])
+    make_tuple("ClustPurVsEne", vecCalAxes[Hist::CVar::CalE],  vecCalAxes[Hist::CVar::CalRho]),
+    make_tuple("ClustN90VsEp",  vecCalAxes[Hist::CVar::CalEP], vecCalAxes[Hist::CVar::CalN90]),
+    make_tuple("ClustDR90VsEp", vecCalAxes[Hist::CVar::CalEP], vecCalAxes[Hist::CVar::CalDR90])
   };
 
   // make histograms
@@ -511,6 +577,9 @@ void CheckClusterSplittingProcessor::FillEvtHistograms(const int calo, const int
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtLeadDivTot) -> Fill(content.lOverT);
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtLeadDivPar) -> Fill(content.lOverP);
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtTotDivPar)  -> Fill(content.tOverP);
+  m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtNClAb90)    -> Fill(content.nCl90);
+  m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtNClBe90)    -> Fill(content.nClB90);
+  m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtNClRec)     -> Fill(content.nClRec);
   return;
 
 }  // end 'FillEvtHistograms(int, int, Hist::EvtContent&)'
@@ -529,6 +598,7 @@ void CheckClusterSplittingProcessor::FillTrkHistograms(const int calo, const int
   m_vecTrkH1D.at(calo).at(type).at(Hist::T1D::TrkDeltaR)      -> Fill(content.dr);
   m_vecTrkH1D.at(calo).at(type).at(Hist::T1D::TrkDeltaRScale) -> Fill(content.drSig);
   m_vecTrkH1D.at(calo).at(type).at(Hist::T1D::TrkEOverP)      -> Fill(content.eOverP);
+  m_vecTrkH1D.at(calo).at(type).at(Hist::T1D::TrkDeposit)     -> Fill(content.deposit);
 
   // fill 2d histograms
   m_vecTrkH2D.at(calo).at(type).at(Hist::T2D::TrkPosYvsX)   -> Fill(content.rx,    content.rx);
@@ -556,13 +626,18 @@ void CheckClusterSplittingProcessor::FillCalHistograms(const int calo, const int
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalFraction) -> Fill(content.frac);
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalPurity)   -> Fill(content.purity);
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalEOverP)   -> Fill(content.eOverP);
+  m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalSigma)    -> Fill(content.sigma);
+  m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalNAdd90)   -> Fill(content.nAdd90);
+  m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalDRAdd90)  -> Fill(content.drAdd90);
 
   // fill 2d histograms
-  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalPosYvsX)   -> Fill(content.rx,  content.ry);
-  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEneVsEta)  -> Fill(content.eta, content.ene);
-  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEneVsPhi)  -> Fill(content.phi, content.ene);
-  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEtaVsPhi)  -> Fill(content.phi, content.eta);
-  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalPurVsEne)  -> Fill(content.ene, content.purity);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalPosYvsX)  -> Fill(content.rx,     content.ry);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEneVsEta) -> Fill(content.eta,    content.ene);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEneVsPhi) -> Fill(content.phi,    content.ene);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEtaVsPhi) -> Fill(content.phi,    content.eta);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalPurVsEne) -> Fill(content.ene,    content.purity);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalN90VsEP)  -> Fill(content.eOverP, content.nAdd90);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalDR90VsEP) -> Fill(content.eOverP, content.drAdd90);
   return;
 
 }  // end 'FillCalHistograms(int, int, Hist::CalContent&)'
@@ -606,6 +681,113 @@ void CheckClusterSplittingProcessor::SaveHistograms() {
 }  // end 'SaveHistograms()'
 
 
+
+void CheckClusterSplittingProcessor::TryToRecover(const double eStart, const double ePar, bool& didRecover, float& drRecover, int32_t& nRecover) {
+
+  // get no. of clusters to check
+  const uint32_t nToCheck = m_mapClustToDr.size();
+
+  // iterate through clusters to check until recovered or nothing left to check
+  bool     checkedAll = false;
+  bool     recovered  = false;
+  double   drChecked  = 0.;
+  double   eChecked   = eStart;
+  uint32_t nChecked   = 1;
+  uint32_t nStep      = 1;
+  while (!recovered && !checkedAll) {
+
+    // get new radius to check in,
+    //   and exit if larger than max
+    const double drToCheck = nStep * m_config.drStep;
+    if (drToCheck > m_config.drMax) {
+      break;
+    }
+
+    // loop through list
+    for (auto idAndDr : m_mapClustToDr) {
+
+      // skip if already checked
+      if (m_mapClustToChecked[idAndDr.first]) {
+        continue;
+      }
+
+      // skip if not in radius to check
+      if (idAndDr.second > drToCheck) {
+        continue;
+      }
+
+     // if in raidus add to running energy sum
+     eChecked += m_mapClustToEne[idAndDr.first];
+
+     // and flag as used, increment counters
+     m_mapClustToChecked[idAndDr.first] = true;
+     ++nChecked;
+    }  // end to-check loop
+
+    // now check if recovered 90%
+    const double newPurity = eChecked / ePar;
+    if (newPurity >= 0.9) {
+      recovered = true;
+    }
+
+    // and check if all clusters have been checked
+    if (nChecked == nToCheck) {
+      checkedAll = true;
+    }
+
+    // update coounters
+    drChecked = drToCheck;
+    ++nStep;
+
+  }  // end while not recovered and not checked all clusters
+
+  // if recover successful, update otuputs
+  if (recovered) {
+    didRecover = recovered;
+    drRecover  = drChecked;
+    nRecover   = nChecked;
+  }
+  return;
+
+}  // end 'TryToRecover(double, double, bool&, float&, int32_t&)'
+
+
+
+void CheckClusterSplittingProcessor::GetClustersAndDr(const edm4eic::ClusterCollection& others, const Hist::CalContent& reference, const int idRef) {
+
+  // loop through clusters
+  m_mapClustToChecked.clear();
+  m_mapClustToDr.clear();
+  m_mapClustToEne.clear();
+  for (auto other : others) {
+
+    // skip this cluster
+    const int id = other.getObjectID().index;
+    if (id == idRef) {
+      continue;
+    }
+
+    // grab cluster info
+    Hist::CalContent cOther;
+    cOther.GetInfo(other);
+
+    // get distances
+    const double dEta = (cOther.eta - reference.eta);
+    const double dPhi = (cOther.phi - reference.phi);
+    const double dR   = hypot(dEta, dPhi);
+
+    // add to lists
+    m_mapClustToChecked.insert( {id, false} );
+    m_mapClustToEne.insert( {id, cOther.ene} );
+    m_mapClustToDr.insert( {id, dR} );
+
+  }  // end cluster loop
+  return;
+
+}  // end 'GetClustersAndDr(edm4eic::ClusterCollection&, Hist::CalContent&, int)'
+
+
+
 void CheckClusterSplittingProcessor::GetProjections(const edm4eic::TrackSegmentCollection& projections, const int calo) {
 
   // make sure vector is empty
@@ -624,6 +806,7 @@ void CheckClusterSplittingProcessor::GetProjections(const edm4eic::TrackSegmentC
   return;
 
 }  // end 'GetProjections(edm4eic::TrackSegmentCollection&)'
+
 
 
 int CheckClusterSplittingProcessor::GetCaloID(const int iCalo) {

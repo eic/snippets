@@ -11,7 +11,9 @@
 #define CHECKCLUSTERSPLITTINGPROCESSOR_H
 
 // c++ utilities
+#include <map>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -83,24 +85,24 @@ namespace Hist {
   enum Calo {NHCal, NECal, BHCal, BECal, PHCal, PECal};
 
   // histogram axes
-  enum EVar {EvtNCl, EvtPE, EvtLE, EvtTE, EvtLT, EvtLP, EvtTP};
-  enum TVar {TrkRX, TrkRY, TrkRZ, TrkH, TrkF, TrkP, TrkDR, TrkDRS, TrkEP};
-  enum CVar {CalNH, CalNP, CalRX, CalRY, CalRZ, CalH, CalF, CalE, CalEps, CalRho, CalEP};
+  enum EVar {EvtNCl, EvtPE, EvtLE, EvtTE, EvtLT, EvtLP, EvtTP, EvtNA90, EvtNB90, EvtNR};
+  enum TVar {TrkRX, TrkRY, TrkRZ, TrkH, TrkF, TrkP, TrkDR, TrkDRS, TrkEP, TrkDep};
+  enum CVar {CalNH, CalNP, CalRX, CalRY, CalRZ, CalH, CalF, CalE, CalEps, CalRho, CalEP, CalSig, CalN90, CalDR90};
 
 
   // event histogram accessors
   enum EType {EvtAll};
-  enum E1D   {EvtNClust, EvtParEne, EvtLeadEne, EvtTotEne, EvtLeadDivTot, EvtLeadDivPar, EvtTotDivPar};
+  enum E1D   {EvtNClust, EvtParEne, EvtLeadEne, EvtTotEne, EvtLeadDivTot, EvtLeadDivPar, EvtTotDivPar, EvtNClAb90, EvtNClBe90, EvtNClRec};
 
   // projection histogram accessors
   enum TType {TrkAll, TrkMatch};
-  enum T1D   {TrkPosX, TrkPosY, TrkPosZ, TrkEta, TrkPhi, TrkMom, TrkDeltaR, TrkDeltaRScale, TrkEOverP};
+  enum T1D   {TrkPosX, TrkPosY, TrkPosZ, TrkEta, TrkPhi, TrkMom, TrkDeltaR, TrkDeltaRScale, TrkEOverP, TrkDeposit};
   enum T2D   {TrkPosYvsX, TrkMomVsEta, TrkEtaVsPhi, TrkEPvsDR, TrkEPvsDRSig};
 
   // cluster histogram accessors
-  enum CType {CalAll};
-  enum C1D   {CalNHit, CalNProj, CalPosX, CalPosY, CalPosZ, CalEta, CalPhi, CalEne, CalFraction, CalPurity, CalEOverP};
-  enum C2D   {CalPosYvsX, CalEneVsEta, CalEneVsPhi, CalEtaVsPhi, CalPurVsEne};
+  enum CType {CalAll, CalAbove90, CalBelow90};
+  enum C1D   {CalNHit, CalNProj, CalPosX, CalPosY, CalPosZ, CalEta, CalPhi, CalEne, CalFraction, CalPurity, CalEOverP, CalSigma, CalNAdd90, CalDRAdd90};
+  enum C2D   {CalPosYvsX, CalEneVsEta, CalEneVsPhi, CalEtaVsPhi, CalPurVsEne, CalN90VsEP, CalDR90VsEP};
 
   // histogram content definitions ------------------------------------------
 
@@ -109,6 +111,9 @@ namespace Hist {
 
     // data
     int64_t nClust = 0;
+    int64_t nCl90  = 0;
+    int64_t nClB90 = 0;
+    int64_t nClRec = 0;
     double  ePar   = 0.;
     double  eLead  = 0.;
     double  eTot   = 0.;
@@ -122,15 +127,16 @@ namespace Hist {
   struct TrkContent {
 
     // data
-    double rx     = 0.;
-    double ry     = 0.;
-    double rz     = 0.;
-    double eta    = 0.;
-    double phi    = 0.;
-    double p      = 0.;
-    double dr     = 0.;
-    double drSig  = 0.;
-    double eOverP = 0.;
+    double rx      = 0.;
+    double ry      = 0.;
+    double rz      = 0.;
+    double eta     = 0.;
+    double phi     = 0.;
+    double p       = 0.;
+    double dr      = 0.;
+    double drSig   = 0.;
+    double eOverP  = 0.;
+    double deposit = 0.;
 
     // get info from projection
     void GetInfo(edm4eic::TrackPoint& point) {
@@ -148,17 +154,20 @@ namespace Hist {
   struct CalContent {
 
     // data
-    int64_t nHit   = 0;
-    int64_t nProj  = 0;
-    double  rx     = 0.;
-    double  ry     = 0.;
-    double  rz     = 0.;
-    double  eta    = 0.;
-    double  phi    = 0.;
-    double  ene    = 0.;
-    double  frac   = 0.;
-    double  purity = 0.;
-    double  eOverP = 0.;
+    int64_t nHit    = 0;
+    int64_t nProj   = 0;
+    int64_t nAdd90  = 0;
+    double  rx      = 0.;
+    double  ry      = 0.;
+    double  rz      = 0.;
+    double  eta     = 0.;
+    double  phi     = 0.;
+    double  ene     = 0.;
+    double  frac    = 0.;
+    double  purity  = 0.;
+    double  eOverP  = 0.;
+    double  sigma   = 0.;
+    double  drAdd90 = 0.;
 
     // get info from cluster
     void GetInfo(edm4eic::Cluster& cluster) {
@@ -183,19 +192,41 @@ class CheckClusterSplittingProcessor : public JEventProcessorSequentialRoot {
 
   // struct to hold user options
   struct Config {
+    float  drStep;
+    float  drMax;
     string parCollect;
     string projCollect;
     vector<pair<string, string>> vecCalos;
+    vector<double> vecAvgEP;
+    vector<double> vecSigEP;
   } m_config = {
-    "GeneratedParticles",
-    "CalorimeterTrackProjections",
-    {
+    .drStep      = 0.05,
+    .drMax       = 3.0,
+    .parCollect  = "GeneratedParticles",
+    .projCollect = "CalorimeterTrackProjections",
+    .vecCalos    = {
       make_pair("HcalEndcapNClusters", "HcalEndcapN"),
       make_pair("EcalEndcapNClusters", "EcalEndcapN"),
       make_pair("HcalBarrelClusters",  "HcalBarrel"),
       make_pair("EcalBarrelClusters",  "EcalBarrelImaging"),
       make_pair("LFHCALClusters",      "LFHCAL"),
       make_pair("EcalEndcapPClusters", "EcalEndcapP")
+    },
+    .vecAvgEP = {
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    },
+    .vecSigEP = {
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
     }
   };  // end Config
 
@@ -219,6 +250,8 @@ class CheckClusterSplittingProcessor : public JEventProcessorSequentialRoot {
     void  FillTrkHistograms(const int calo, const int type, const Hist::TrkContent& content);
     void  FillCalHistograms(const int calo, const int type, const Hist::CalContent& content);
     void  SaveHistograms();
+    void  TryToRecover(const double eStart, const double ePar, bool& didRecover, float& drRecover, int32_t& nRecover);
+    void  GetClustersAndDr(const edm4eic::ClusterCollection& others, const Hist::CalContent& reference, const int idRef);
     void  GetProjections(const edm4eic::TrackSegmentCollection& projections, const int calo);
     int   GetCaloID(const int iCalo);
     FPair GetClusterWidths(const edm4eic::Cluster& cluster);
@@ -234,6 +267,11 @@ class CheckClusterSplittingProcessor : public JEventProcessorSequentialRoot {
 
     // for matching tracks to clusters
     TrkVec m_vecTrkProj;
+
+    // for adding clusters during split recovery
+    map<int, bool>   m_mapClustToChecked;
+    map<int, double> m_mapClustToEne;
+    map<int, double> m_mapClustToDr;
 
 };  // end CheckClusterSplittingProcessor
 
