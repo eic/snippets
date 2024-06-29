@@ -85,14 +85,14 @@ namespace Hist {
   enum Calo {NHCal, NECal, BHCal, BECal, PHCal, PECal};
 
   // histogram axes
-  enum EVar {EvtNCl, EvtPE, EvtLE, EvtTE, EvtLT, EvtLP, EvtTP, EvtNA90, EvtNB90, EvtNR};
+  enum EVar {EvtNTr, EvtNCl, EvtPE, EvtLE, EvtTE, EvtLT, EvtLP, EvtTP, EvtNA90, EvtNB90, EvtNR};
   enum TVar {TrkRX, TrkRY, TrkRZ, TrkH, TrkF, TrkP, TrkDR, TrkDRS, TrkEP, TrkDep};
-  enum CVar {CalNH, CalNP, CalRX, CalRY, CalRZ, CalH, CalF, CalE, CalEps, CalRho, CalEP, CalSig, CalN90, CalDR90};
+  enum CVar {CalNH, CalNP, CalRX, CalRY, CalRZ, CalH, CalF, CalE, CalEps, CalRho, CalEP, CalSig, CalN90, CalP90, CalDR90};
 
 
   // event histogram accessors
   enum EType {EvtAll};
-  enum E1D   {EvtNClust, EvtParEne, EvtLeadEne, EvtTotEne, EvtLeadDivTot, EvtLeadDivPar, EvtTotDivPar, EvtNClAb90, EvtNClBe90, EvtNClRec};
+  enum E1D   {EvtNTrk, EvtNClust, EvtParEne, EvtLeadEne, EvtTotEne, EvtLeadDivTot, EvtLeadDivPar, EvtTotDivPar, EvtNClAb90, EvtNClBe90, EvtNClRec};
 
   // projection histogram accessors
   enum TType {TrkAll, TrkMatch};
@@ -101,8 +101,8 @@ namespace Hist {
 
   // cluster histogram accessors
   enum CType {CalAll, CalAbove90, CalBelow90};
-  enum C1D   {CalNHit, CalNProj, CalPosX, CalPosY, CalPosZ, CalEta, CalPhi, CalEne, CalFraction, CalPurity, CalEOverP, CalSigma, CalNAdd90, CalDRAdd90};
-  enum C2D   {CalPosYvsX, CalEneVsEta, CalEneVsPhi, CalEtaVsPhi, CalPurVsEne, CalN90VsEP, CalDR90VsEP};
+  enum C1D   {CalNHit, CalNProj, CalPosX, CalPosY, CalPosZ, CalEta, CalPhi, CalEne, CalFraction, CalPurity, CalEOverP, CalSigma, CalNAdd90, CalPAdd90, CalDRAdd90};
+  enum C2D   {CalPosYvsX, CalEneVsEta, CalEneVsPhi, CalEtaVsPhi, CalPurVsEne, CalN90VsEP, CalP90VsEP, CalDR90VsEP};
 
   // histogram content definitions ------------------------------------------
 
@@ -110,6 +110,7 @@ namespace Hist {
   struct EvtContent {
 
     // data
+    int64_t nTrk   = 0;
     int64_t nClust = 0;
     int64_t nCl90  = 0;
     int64_t nClB90 = 0;
@@ -154,20 +155,21 @@ namespace Hist {
   struct CalContent {
 
     // data
-    int64_t nHit    = 0;
-    int64_t nProj   = 0;
-    int64_t nAdd90  = 0;
-    double  rx      = 0.;
-    double  ry      = 0.;
-    double  rz      = 0.;
-    double  eta     = 0.;
-    double  phi     = 0.;
-    double  ene     = 0.;
-    double  frac    = 0.;
-    double  purity  = 0.;
-    double  eOverP  = 0.;
-    double  sigma   = 0.;
-    double  drAdd90 = 0.;
+    int64_t nHit     = 0;
+    int64_t nProj    = 0;
+    int64_t nAdd90   = 0;
+    double  rx       = 0.;
+    double  ry       = 0.;
+    double  rz       = 0.;
+    double  eta      = 0.;
+    double  phi      = 0.;
+    double  ene      = 0.;
+    double  frac     = 0.;
+    double  purity   = 0.;
+    double  eOverP   = 0.;
+    double  sigma    = 0.;
+    double  perAdd90 = 0.;
+    double  drAdd90  = 0.;
 
     // get info from cluster
     void GetInfo(edm4eic::Cluster& cluster) {

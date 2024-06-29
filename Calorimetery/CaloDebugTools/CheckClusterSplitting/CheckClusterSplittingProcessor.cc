@@ -198,7 +198,10 @@ void CheckClusterSplittingProcessor::ProcessSequential(const shared_ptr<const JE
       cContent.nAdd90  = nRecover;
       cContent.drAdd90 = drRecover;
       if (didRecover) {
+        cContent.perAdd90 = (double) nRecover / (double) clusters.size();
         ++nClustRec;
+      } else {
+        cContent.perAdd90 = numeric_limits<double>::max();
       }
 
       // fill cluster histograms
@@ -212,11 +215,11 @@ void CheckClusterSplittingProcessor::ProcessSequential(const shared_ptr<const JE
       FillCalHistograms(iCalo, Hist::CType::CalAll, cContent);
       ++nClusters;
 
-
     }  // end cluster loop
 
     // set event level-information
     Hist::EvtContent eContent;
+    eContent.nTrk   = m_vecTrkProj.size();
     eContent.nClust = nClusters;
     eContent.nCl90  = nClustAb90;
     eContent.nClB90 = nClustBe90;
@@ -253,6 +256,7 @@ void CheckClusterSplittingProcessor::BuildEvtHistograms() {
 
   // histogram binning/labales
   VecAxisDef vecEvtAxes = {
+    make_pair("N_{trk}",                  make_tuple(100, -0.5, 99.5)),
     make_pair("N_{clust}",                make_tuple(100, -0.5, 99.5)),
     make_pair("E_{par} [GeV]",            make_tuple(100, 0., 50.)),
     make_pair("E_{lead} [GeV]",           make_tuple(100, 0., 50.)),
@@ -272,6 +276,7 @@ void CheckClusterSplittingProcessor::BuildEvtHistograms() {
 
   // histogram definitions
   VecHistDef1D vecEvtDef1D = {
+    make_tuple("EvtNTrk",            vecEvtAxes[Hist::EVar::EvtNTr]),
     make_tuple("EvtNClust",          vecEvtAxes[Hist::EVar::EvtNCl]),
     make_tuple("EvtParEne",          vecEvtAxes[Hist::EVar::EvtPE]),
     make_tuple("EvtLeadEne",         vecEvtAxes[Hist::EVar::EvtLE]),
@@ -457,6 +462,7 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
     make_pair("E/p",                       make_tuple(250, 0., 5.)),
     make_pair("S(E_{clust})",              make_tuple(20, -10., 10.)),
     make_pair("N_{90}",                    make_tuple(100, -0.5, 99.5)),
+    make_pair("N_{90}/N_{clust}",          make_tuple(20, 0., 2.)),
     make_pair("#Deltar_{90}",              make_tuple(60, 0., 3.))
   };
 
@@ -482,6 +488,7 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
     make_tuple("ClustEoverP",  vecCalAxes[Hist::CVar::CalEP]),
     make_tuple("ClustCutSig",  vecCalAxes[Hist::CVar::CalSig]),
     make_tuple("ClustNAdd90",  vecCalAxes[Hist::CVar::CalN90]),
+    make_tuple("ClustPAdd90",  vecCalAxes[Hist::CVar::CalP90]),
     make_tuple("ClustDrAdd90", vecCalAxes[Hist::CVar::CalDR90])
   };
   VecHistDef2D vecCalDef2D = {
@@ -491,6 +498,7 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
     make_tuple("ClustEtaVsPhi", vecCalAxes[Hist::CVar::CalF],  vecCalAxes[Hist::CVar::CalH]),
     make_tuple("ClustPurVsEne", vecCalAxes[Hist::CVar::CalE],  vecCalAxes[Hist::CVar::CalRho]),
     make_tuple("ClustN90VsEp",  vecCalAxes[Hist::CVar::CalEP], vecCalAxes[Hist::CVar::CalN90]),
+    make_tuple("ClustP90VsEp",  vecCalAxes[Hist::CVar::CalEP], vecCalAxes[Hist::CVar::CalP90]),
     make_tuple("ClustDR90VsEp", vecCalAxes[Hist::CVar::CalEP], vecCalAxes[Hist::CVar::CalDR90])
   };
 
@@ -570,6 +578,7 @@ void CheckClusterSplittingProcessor::BuildCalHistograms() {
 void CheckClusterSplittingProcessor::FillEvtHistograms(const int calo, const int type, const Hist::EvtContent& content) {
 
   // fill 1d hisgorams
+  m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtNTrk)       -> Fill(content.nTrk);
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtNClust)     -> Fill(content.nClust);
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtParEne)     -> Fill(content.ePar);
   m_vecEvtH1D.at(calo).at(type).at(Hist::E1D::EvtLeadEne)    -> Fill(content.eLead);
@@ -628,6 +637,7 @@ void CheckClusterSplittingProcessor::FillCalHistograms(const int calo, const int
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalEOverP)   -> Fill(content.eOverP);
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalSigma)    -> Fill(content.sigma);
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalNAdd90)   -> Fill(content.nAdd90);
+  m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalPAdd90)   -> Fill(content.perAdd90);
   m_vecCalH1D.at(calo).at(type).at(Hist::C1D::CalDRAdd90)  -> Fill(content.drAdd90);
 
   // fill 2d histograms
@@ -637,6 +647,7 @@ void CheckClusterSplittingProcessor::FillCalHistograms(const int calo, const int
   m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalEtaVsPhi) -> Fill(content.phi,    content.eta);
   m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalPurVsEne) -> Fill(content.ene,    content.purity);
   m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalN90VsEP)  -> Fill(content.eOverP, content.nAdd90);
+  m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalP90VsEP)  -> Fill(content.eOverP, content.perAdd90);
   m_vecCalH2D.at(calo).at(type).at(Hist::C2D::CalDR90VsEP) -> Fill(content.eOverP, content.drAdd90);
   return;
 
