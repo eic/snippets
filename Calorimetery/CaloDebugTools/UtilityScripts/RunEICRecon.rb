@@ -57,6 +57,6 @@ options.each_with_index do |option, iOption|
 end
 
 # run EICrecon
-exec("eicrecon -Pplugins=#{arg_plugin} -Ppodio:output_include_collections=#{arg_collect} -Ppodio:output_file=#{out_podio} -Phistsfile=#{out_plugin} #{in_ddsim}")
+exec("eicrecon -Pplugins=#{arg_plugin} -Ppodio:output_collections=#{arg_collect} -Ppodio:output_file=#{out_podio} -Phistsfile=#{out_plugin} #{in_ddsim}")
 
 # end -------------------------------------------------------------------------
