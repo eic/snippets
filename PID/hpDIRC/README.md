@@ -86,6 +86,6 @@ cmake --build hpDIRCrawHits/build --target install
 ```
 To run the plugins with ```eicrecon``` over the simulation file ```sim.edm4hep.root``` which was created earlier using ```npsim``` do:
 ```bash
-eicrecon -Pplugins=hpDIRCsimHits,hpDIRCrawHits -Ppodio:output_include_collections=DIRCRawHits,DIRCRawHitsAssociations sim.edm4hep.root
+eicrecon -Pplugins=hpDIRCsimHits,hpDIRCrawHits -Ppodio:output_collections=DIRCRawHits,DIRCRawHitsAssociations sim.edm4hep.root
 ```
 This will create two output files ```eicrecon.root``` and ```podio_output.root```. The file ```eicrecon.root``` should contain two directories ```hpDIRCsimHits``` and ```hpDIRCrawHits``` corresponding to the plugins we used. The histograms and trees defined in the plugins can be found in these directories. The ```dirctree``` in the ```hpDIRCrawHits``` directory will be used to obtain information required for the time imaging reconstruction.
