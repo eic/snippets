@@ -25,16 +25,16 @@
 #include <podio/Frame.h>
 #include <podio/CollectionBase.h>
 #include <podio/ROOTFrameReader.h>
-// edm4hep types
-#include <edm4hep/SimCalorimeterHit.h>
-#include <edm4hep/SimCalorimeterHitCollection.h>
-#include <edm4hep/CaloHitContribution.h>
 // edm4eic types
 #include <edm4eic/Cluster.h>
 #include <edm4eic/ClusterCollection.h>
 #include <edm4eic/MCRecoClusterParticleAssociation.h>
 #include <edm4eic/MCRecoClusterParticleAssociationCollection.h>
 #include <edm4eic/CalorimeterHit.h>
+// edm4hep types
+#include <edm4hep/SimCalorimeterHit.h>
+#include <edm4hep/SimCalorimeterHitCollection.h>
+#include <edm4hep/CaloHitContribution.h>
 
 
 

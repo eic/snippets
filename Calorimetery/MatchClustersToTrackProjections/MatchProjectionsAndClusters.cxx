@@ -24,15 +24,15 @@
 #include <podio/Frame.h>
 #include <podio/CollectionBase.h>
 #include <podio/ROOTFrameReader.h>
-// edm4hep types
-#include <edm4hep/Vector3f.h>
-#include <edm4hep/utils/vector_utils.h>
 // edm4eic types
 #include <edm4eic/Cluster.h>
 #include <edm4eic/ClusterCollection.h>
 #include <edm4eic/TrackPoint.h>
 #include <edm4eic/TrackSegment.h>
 #include <edm4eic/TrackSegmentCollection.h>
+// edm4hep types
+#include <edm4hep/Vector3f.h>
+#include <edm4hep/utils/vector_utils.h>
 
 
 
