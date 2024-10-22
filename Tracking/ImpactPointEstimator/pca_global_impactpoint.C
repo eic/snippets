@@ -42,24 +42,24 @@ void pca_global_impactpoint(){
     auto perigee = Acts::Surface::makeShared<Acts::PerigeeSurface>(Acts::Vector3(0,0,0));
 
     // Get Magnetic field context
-	Acts::MagneticFieldContext fieldctx;
-	std::shared_ptr<const Acts::DD4hepFieldAdapter> field_provider = std::make_shared<const Acts::DD4hepFieldAdapter>(detector.field());
-	Acts::MagneticFieldProvider::Cache field_cache = field_provider->makeCache(fieldctx);
+    Acts::MagneticFieldContext fieldctx;
+    std::shared_ptr<const Acts::DD4hepFieldAdapter> field_provider = std::make_shared<const Acts::DD4hepFieldAdapter>(detector.field());
+    Acts::MagneticFieldProvider::Cache field_cache = field_provider->makeCache(fieldctx);
 
-	// Stepper and Propagator
-	using Stepper    = Acts::EigenStepper<>;
-	using Propagator = Acts::Propagator<Stepper>;
+    // Stepper and Propagator
+    using Stepper    = Acts::EigenStepper<>;
+    using Propagator = Acts::Propagator<Stepper>;
 
-	Stepper stepper(field_provider);
-	Propagator propagator(stepper);
+    Stepper stepper(field_provider);
+    Propagator propagator(stepper);
 
-	// Create Impact Point Estimator
-	Acts::ImpactPointEstimator::Config ImPoEs_cfg(field_provider,std::make_shared<Propagator>(propagator));
+    // Create Impact Point Estimator
+    Acts::ImpactPointEstimator::Config ImPoEs_cfg(field_provider,std::make_shared<Propagator>(propagator));
 
-	Acts::ImpactPointEstimator::State ImPoEs_state;
-	ImPoEs_state.fieldCache = field_cache;
+    Acts::ImpactPointEstimator::State ImPoEs_state;
+    ImPoEs_state.fieldCache = field_cache;
 
-	Acts::ImpactPointEstimator ImPoEs(ImPoEs_cfg);
+    Acts::ImpactPointEstimator ImPoEs(ImPoEs_cfg);
 
     // Create 'vertex' at particle's creation point -- which is (x,y,z) = (1,0,0) mm
     Acts::Vector3 vtx_pos(1.0 * Acts::UnitConstants::mm, 0, 0);
@@ -143,6 +143,7 @@ void pca_global_impactpoint(){
     TTreeReaderArray<float> track_phi(tr, Form("%s.phi",coll.c_str()));
     TTreeReaderArray<float> track_loca(tr, Form("%s.loc.a",coll.c_str()));
     TTreeReaderArray<float> track_locb(tr, Form("%s.loc.b",coll.c_str()));
+    TTreeReaderArray<float> track_time(tr, Form("%s.time",coll.c_str()));
 
     //Loop over events
     int counter(0);
@@ -169,21 +170,22 @@ void pca_global_impactpoint(){
             auto phi = track_phi[itrack];
             auto theta = track_theta[itrack];
             auto qoverP = track_qoverp[itrack];
+            auto time = track_time[itrack];
 
             // Create BoundTrackParamters
-	        Acts::BoundVector params;
+            Acts::BoundVector params;
 	
-	        params(Acts::eBoundLoc0)   = loc_a;
-	        params(Acts::eBoundLoc1)   = loc_b;
-	        params(Acts::eBoundPhi)    = phi;
-	        params(Acts::eBoundTheta)  = theta;
-	        params(Acts::eBoundQOverP) = qoverP;
-	        params(Acts::eBoundTime)   = 0; 
+	    params(Acts::eBoundLoc0)   = loc_a;
+	    params(Acts::eBoundLoc1)   = loc_b;
+	    params(Acts::eBoundPhi)    = phi;
+	    params(Acts::eBoundTheta)  = theta;
+	    params(Acts::eBoundQOverP) = qoverP;
+	    params(Acts::eBoundTime)   = time; 
 
             //FIXME: Set covariance matrix based on input ROOT file information
-	        Acts::BoundSquareMatrix cov = Acts::BoundSquareMatrix::Zero();
+	    Acts::BoundSquareMatrix cov = Acts::BoundSquareMatrix::Zero();
 
-	        Acts::BoundTrackParameters track_parameters(perigee,params,cov,Acts::ParticleHypothesis::pion());
+	    Acts::BoundTrackParameters track_parameters(perigee,params,cov,Acts::ParticleHypothesis::pion());
 
             //---- Part 1: Convert from local coordinates to global coordinates at beamline (z-axis) POCA ----
             Acts::Vector2 localpos( loc_a, loc_b );
@@ -201,26 +203,26 @@ void pca_global_impactpoint(){
             //---- Part 2: Get track parameters at 3D DCA to creation point at (x,y,z) = (1,0,0) mm ----
             auto result = ImPoEs.estimate3DImpactParameters(trackingGeoCtx,fieldctx,track_parameters,vtx_pos,ImPoEs_state);
 
-	        if(result.ok()){
-		        Acts::BoundTrackParameters trk_boundpar_vtx = result.value();
-		        const auto& trk_vtx_params  = trk_boundpar_vtx.parameters();
-
-                h2->Fill(trk_vtx_params[Acts::eBoundLoc0]);
+	    if(result.ok()){
+		Acts::BoundTrackParameters trk_boundpar_vtx = result.value();
+		const auto& trk_vtx_params  = trk_boundpar_vtx.parameters();
+		
+		h2->Fill(trk_vtx_params[Acts::eBoundLoc0]);
             }
 
             //---- Part 2a: Get track parameters at 3D DCA to (x,y,z) = (2,0,0) mm ----
             auto result2 = ImPoEs.estimate3DImpactParameters(trackingGeoCtx,fieldctx,track_parameters,vtx_pos2,ImPoEs_state);
 
-	        if(result2.ok()){
-		        Acts::BoundTrackParameters trk_boundpar_vtx2 = result2.value();
-		        const auto& trk_vtx_params2  = trk_boundpar_vtx2.parameters();
+	    if(result2.ok()){
+		Acts::BoundTrackParameters trk_boundpar_vtx2 = result2.value();
+		const auto& trk_vtx_params2  = trk_boundpar_vtx2.parameters();
 
-                h3->Fill(trk_vtx_params2[Acts::eBoundLoc0]);
+              	h3->Fill(trk_vtx_params2[Acts::eBoundLoc0]);
 
                 //Get global position at 3D DCA
                 auto trk_vtx2_gbl_pos = trk_boundpar_vtx2.position(trackingGeoCtx);
                 
-                auto delta_x = trk_vtx2_gbl_pos.x() - 2.;
+		auto delta_x = trk_vtx2_gbl_pos.x() - 2.;
                 auto delta_y = trk_vtx2_gbl_pos.y() - 0.;
                 auto delta_z = trk_vtx2_gbl_pos.z() - 0.;
 
@@ -231,6 +233,26 @@ void pca_global_impactpoint(){
                 h4a->Fill(gen_vec.Phi(),xy_distance);
                 h4b->Fill(gen_vec.Theta(),delta_z);
             }
+
+            //---- Part 3: Propagate track to Perigee surface at (x,y,z) = (2,0,0) mm ----
+
+            // Define Perigee surface to which to propagate track
+            auto perigee2 = Acts::Surface::makeShared<Acts::PerigeeSurface>(Acts::Vector3(2,0,0));
+
+            // Create propagator options
+            Acts::PropagatorOptions<> pOptions(trackingGeoCtx, fieldctx);
+            auto intersection = perigee2->intersect(trackingGeoCtx, track_parameters.position(trackingGeoCtx),
+                                track_parameters.direction(), Acts::BoundaryCheck(false)).closest();
+  
+            pOptions.direction = Acts::Direction::fromScalarZeroAsPositive(intersection.pathLength());
+
+            // Do the propagation to linPoint
+            auto result_perigee2 = propagator.propagateToSurface(track_parameters, *perigee2, pOptions);
+
+            if(result_perigee2.ok()){
+            	Acts::BoundTrackParameters trk_boundpar_perigee2 = result2.value();
+                const auto& trk_perigee2  = trk_boundpar_perigee2.parameters();
+             }
 
         } // End loop over tracks
         
