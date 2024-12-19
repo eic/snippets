@@ -34,7 +34,7 @@ END {
 
   # options
   options = [
-    "-Pjana:nevents=100",
+  #  "-Pjana:nevents=100",
     "-Peicrecon:LogLevel=trace"
   ].compact.reject(&:empty?).join(' ')
 
@@ -60,7 +60,7 @@ END {
 def make_phi_mapping(nmerge)
 
   map = if nmerge.to_i > 1
-    '"phi-(#{nmerge}*((phi/#{nmerge})-floor(phi/#{nmerge})))"'
+    "\"phi-(#{nmerge}*((phi/#{nmerge})-floor(phi/#{nmerge})))\""
   else
     "phi"
   end
