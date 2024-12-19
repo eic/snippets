@@ -16,8 +16,8 @@ END {
 
   # i/o parameters
   in_ddsim   = "../input/forBHCalOnlyCheck.e10pim.file0.d30m10y2024.edm4hep.root"
-  out_podio  = "forTileMerger.afterReview_baseline.d19m12y2024.podio.root"
-  out_plugin = "forTileMerger.afterReview_baseline.d19m12y2024.plugin.root"
+  out_podio  = "forTileMerger.afterReview_change0_removeMatrixMakers.d19m12y2024.podio.root"
+  out_plugin = "forTileMerger.afterReview_change0_removeMatrixMakers.d19m12y2024.plugin.root"
 
   # output collections from EICrecon
   out_collect = [
@@ -43,7 +43,7 @@ END {
   add_map_and_matrix_to_options(nmerge, options)
 
   # run EICrecon
-  exec("eicrecon -Pplugins=#{plugins} -Ppodio:output_collections=#{out_collect} #{options} -Ppodio:output_file=#{out_podio} -Phistsfile=#{out_plugin} #{in_ddsim}")
+  exec("eicrecon -Pplugins=#{plugins} -Ppodio:output_collections=#{out_collect} #{options} -Ppodio:output_file=#{out_podio} #{in_ddsim}")
 
 }  # end main body of script
 
@@ -60,7 +60,7 @@ END {
 def make_phi_mapping(nmerge)
 
   map = if nmerge.to_i > 1
-    "phi-(#{nmerge}*((phi/#{nmerge})-floor(phi/#{nmerge})))"
+    '"phi-(#{nmerge}*((phi/#{nmerge})-floor(phi/#{nmerge})))"'
   else
     "phi"
   end
