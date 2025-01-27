@@ -5,6 +5,8 @@
 #           use option 0,1,2 step by step to generate the material map (or option -1 to run it at once). option 4 and 5 to produce comparison plots.
 # Shujie Li, 03. 2024
 
+echo "!!!WARNING: disabled FPE monitor to suppress errors in material_mapping_ePIC.py"
+export ACTS_SEQUENCER_DISABLE_FPEMON=0
 
 echo "=========FOR EPIC Craterlake, 03.2024========="
 source detector_setup.sh

@@ -84,7 +84,7 @@ def runMaterialRecording(
         acts.examples.RootMaterialTrackWriter(
             prePostStep=True,
             recalculateTotals=True,
-            collection="material-tracks",
+            inputMaterialTracks="material-tracks",
             filePath=outpath,
             level=acts.logging.INFO,
         )

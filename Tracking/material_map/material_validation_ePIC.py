@@ -80,7 +80,7 @@ def runMaterialValidation(
     s.addWriter(
         RootMaterialTrackWriter(
             level=acts.logging.INFO,
-            collection=alg.config.propagationMaterialCollection,
+            inputMaterialTracks=alg.config.propagationMaterialCollection,
             filePath=outpath,
             storeSurface=True,
             storeVolume=True,
@@ -92,7 +92,7 @@ def runMaterialValidation(
         s.addWriter(
             acts.examples.RootPropagationStepsWriter(
                 level=acts.logging.INFO,
-                collection=alg.config.propagationStepCollection,
+                inputMaterialTracks=alg.config.propagationStepCollection,
                 filePath=outpath,
             )
         )
