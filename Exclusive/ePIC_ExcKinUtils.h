@@ -75,10 +75,9 @@ Double_t calcT_eX(const V& q, const V& X){
 // Calculate Mandelstam t - eXBA method using tRECO conventions
 // Include final state baryon information into eX method
 //--------------------------------------------------------------
-// NEEDS: e, e', p', X    [e, e', HFS]
+// NEEDS: e, e', p', X 
 // CANNOT JUST GIVE q-VECTOR; NEED INFO. FROM e'
 //--------------------------------------------------------------
-// 1. Providing separate vectors for all particles
 template <typename V>
 Double_t calcT_eXBA(const V& e, const V& ep, const V& pp, const V& X){
   // Extract info. from vectors - e' energy and theta
@@ -96,30 +95,40 @@ Double_t calcT_eXBA(const V& e, const V& ep, const V& pp, const V& X){
   double t = (pcorr - X).M2();
   return TMath::Abs(t);
 }
-// 2. Combining HFS into 1 vector
-template <typename V>
-Double_t calcT_eXBA(const V& e, const V& ep, const V& HFS){
-  // Extract info. from vectors - e' energy and theta
-  double E_ep = ep.E();
-  double theta_ep = ep.Theta();
-
-  // Intermediate calculations - q vector and HFS sigma
-  P3EVector q(e.X()-ep.X(), e.Y()-ep.Y(), e.Z()-ep.Z(), e.E()-ep.E());
-  double sigma_h = (HFS.E() - HFS.Z());
-  double sigterm = sigma_h/2;
-  double eterm = (E_ep*(1+TMath::Cos(theta_ep)))/2;
-  
-  P3EVector pcorr(q.X(), q.Y(), -sigterm-eterm, sigterm-eterm);
-
-  double t = (pcorr - X).M2();
-  return TMath::Abs(t);
-}
 
 // Calculate Mandelstam t - eXBE method using tRECO conventions
 // Include initial beam proton information into eX method
 //--------------------------------------------------------------
-// NEEDS: TO CHECK
+// NEEDS: e, p, ep, pp, X    [q, p, pp, X]
 //--------------------------------------------------------------
+// 1. Separate vectors for beam and scattered electrons
+template<typename V>
+Double_t calcT_eXBE(const V& e, const V& p, const V& ep, const V& pp, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((e+p-ep-X).X(),(e+p-ep-X).Y(),(e+p-ep-X).Z(),(e+p-ep-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(pp.M(),2));
+  P3EVector pcorr(p4miss.Vect().X(), p4miss.Vect().Y(), p4miss.Vect().Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
+// 2. Giving virtual photon vector directly
+template<typename V>
+Double_t calcT_eXBE(const V& p, const V& q, const V& pp, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((p+q-X).X(),(p+q-X).Y(),(p+q-X).Z(),(p+q-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(pp.M(),2));
+  P3EVector pcorr(p4miss.Vect().X(), p4miss.Vect().Y(), p4miss.Vect().Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
 
 // Calculate Mandelstam t - eBABE method using tRECO conventions
 // Include electron (beam and scattered) information into BABE method
@@ -131,7 +140,7 @@ template<typename V>
 Double_t calcT_eBABE(const V& e, const V& p, const V& ep, const V& pp){
   // Calculate needed vectors
   P3EVector q(e.X()-ep.X(), e.Y()-ep.Y(), e.Z()-ep.Z(), e.E()-ep.E());
-  P3EVector pcorr(-q.X(), -q.Y() pp.Z(), pp.E());
+  P3EVector pcorr(-q.X(), -q.Y(), pp.Z(), pp.E());
 
   double t = (pcorr - p).M2();
   return TMath::Abs(t);
@@ -139,7 +148,7 @@ Double_t calcT_eBABE(const V& e, const V& p, const V& ep, const V& pp){
 // 2. Giving virtual photon vector directly
 template <typename V>
 Double_t calcT_eBABE(const V& p, const V& q, const V& pp){
-  P3EVector pcorr(-q.X(), -q.Y() pp.Z(), pp.E());
+  P3EVector pcorr(-q.X(), -q.Y(), pp.Z(), pp.E());
 
   double t = (pcorr - p).M2();
   return TMath::Abs(t);
@@ -152,7 +161,7 @@ Double_t calcT_eBABE(const V& p, const V& q, const V& pp){
 // CANNOT PROVIDE HFS BY ITSELF
 //--------------------------------------------------------------
 template<typename V>
-Double_t calcT_eBABE(const V& p, const V& pp, const V& X){
+Double_t calcT_XBABE(const V& p, const V& pp, const V& X){
   P3EVector pcorr(-X.X(), -X.Y(), pp.Z(), pp.E());
 
   double t = (pcorr - p).M2();
@@ -161,6 +170,41 @@ Double_t calcT_eBABE(const V& p, const V& pp, const V& X){
 
 // Calculate Mandelstam t - eXBABE method using tRECO conventions
 // Uses full event information
+//--------------------------------------------------------------
+// NEEDS: e, p, ep, pp, X    [q, p, pp, X]
+//--------------------------------------------------------------
+// 1. Separate vectors for beam and scattered electrons
+template<typename V>
+Double_t calcT_eXBABE(const V& e, const V& p, const V& ep, const V& pp, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((e+p-ep-X).X(),(e+p-ep-X).Y(),(e+p-ep-X).Z(),(e+p-ep-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  ROOT::Math::Polar3DVector pcorr_vect(pmiss_mag, pp.Theta(), pp.Phi());
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(pp.M(),2));
+  
+  P3EVector pcorr(pcorr_vect.X(), pcorr_vect.Y(), pcorr_vect.Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
+// 2. Giving virtual photon vector directly
+template<typename V>
+Double_t calcT_eXBABE(const V& p, const V& q, const V& pp, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((p+q-X).X(),(p+q-X).Y(),(p+q-X).Z(),(p+q-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  ROOT::Math::Polar3DVector pcorr_vect(pmiss_mag, pp.Theta(), pp.Phi());
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(pp.M(),2));
+  
+  P3EVector pcorr(pcorr_vect.X(), pcorr_vect.Y(), pcorr_vect.Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
 
 // Calculate missing kinematics (mass/energy/momentum)
 // 3-body final state: ab->cdf
