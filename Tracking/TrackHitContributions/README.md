@@ -20,11 +20,10 @@ This will generate 10,000 single negative muon events with 2 GeV/c momentum, eta
 
 Running the analysis code
 ---------------------
-The analysis code needs to be run in the container, since it uses PODIO classes.
+The analysis code needs to be run in the container, since it uses PODIO classes. If you want to print out information for every event, set the ```print_evt_info``` variable to true.
 
 ```
 mkdir plots
 source /opt/detector/epic-main/bin/thisepic.sh
 root -l -b -q hit_matching.C 
 ```
-
