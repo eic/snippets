@@ -21,6 +21,6 @@ root -l -q jetReader_TTreeReader.C'("/path/to/eicrecon/output/file")'
 
 Note: The specified path can be the xrootd streaming server. For example:
 
-root://dtn-eic.jlab.org//work/eic2/EPIC/RECO/24.05.0/epic_craterlake/DIS/NC/18x275/minQ2=10/pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.2501.eicrecon.tree.edm4eic.root
+root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/24.05.0/epic_craterlake/DIS/NC/18x275/minQ2=10/pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.2501.eicrecon.tree.edm4eic.root
 
 Wildcards are also supported.
