@@ -21,24 +21,63 @@ std::vector<std::string> rec_coll_names{
 					};
 
 //Collection IDs for RecHit collections.
-//FIXME: Do not hardcode
-std::vector<int> rec_coll_ids{
-					1822894424,-323492104,480846150,
-					176177746,-1988813767,695150340,-804067214,
-					753683776,484488104	
-					};
+std::vector<unsigned int> rec_coll_ids;
 
-//Track collection to use: real-seeded or truth-seeded
-std::string trk_coll = "CentralCKFTracks";
+//Simulation file to use
+std::string input_file = "input/eicrecon_out_2GeV.root";
 
+//-----------------
+//Function to set Collection IDs
+vector<unsigned int> get_coll_ids(vector<string> coll_names){
+
+	vector<unsigned int> coll_ids;
+	
+        TFile *f = new TFile(input_file.c_str());
+        TTree *t = (TTree*) f->Get("podio_metadata");
+
+        TTreeReader tr(t);
+        TTreeReaderArray<unsigned int> c_ids(tr,"events___idTable.m_collectionIDs");
+        TTreeReaderArray<string> c_names(tr,"events___idTable.m_names");	
+
+	tr.Next();
+
+	//Find the associated collection ID
+	for(int iname = 0; iname < coll_names.size(); iname++) {
+		for(int icol=0;icol<c_ids.GetSize();icol++){
+			if( c_names[icol] == coll_names[iname] )
+				coll_ids.push_back(c_ids[icol]);
+		}
+	}
+
+	delete f;
+
+	return coll_ids;
+}
+
+//-----------------
 // Main function
 void hit_matching(){
 
+	//Track collection to use: real-seeded or truth-seeded
+	std::string trk_coll = "CentralCKFTracks";
+
+	//Print out information event-by-event
+	bool print_evt_info = false;
+
+	//Set collection Ids
+	rec_coll_ids = get_coll_ids(rec_coll_names);
+
 	//Create map between RecHit collection IDs and names
-    	std::unordered_map<int, std::string> RecHitCollMap;
+    	std::unordered_map<unsigned int, std::string> RecHitCollMap;
     	for (int i = 0; i < rec_coll_ids.size(); i++) {
 		RecHitCollMap[rec_coll_ids[i]] = rec_coll_names[i];
     	}
+
+	//Print out Map information
+	cout << endl << "Created Map between Collection IDs and Names:"<<endl;
+	for (const auto& pair : RecHitCollMap) {
+        	cout << "Collection ID: "<< pair.first << " | Collection Name: " << pair.second << endl;
+	}
 
 	//Create map between RecHit collection names and vector index
 	std::unordered_map<std::string, int> index_map;
@@ -140,8 +179,7 @@ void hit_matching(){
 	}
 	
 	podio::ROOTFrameReader r;
-	//r.openFile("input/eicrecon_out_0_0_0.root"); //Single muon, uniform momentum [0.5,20] GeV/c
-	r.openFile("input/eicrecon_out_2GeV.root"); //Single muon, 2GeV/c momentum
+	r.openFile(input_file); //Single muon, 2GeV/c momentum
 
 	auto nevents = r.getEntries(podio::Category::Event);
 	cout<<"---------------"<<endl;
@@ -150,10 +188,13 @@ void hit_matching(){
 
 	//Loop over events. Can I do this more easily?
 	for( unsigned int ievent = 0; ievent < nevents; ievent++){
-		
+
+		if((ievent%1000)==0) cout<<"Processed event "<<ievent<<endl;
+
 		//Get event
 		auto f = podio::Frame(r.readNextEntry(podio::Category::Event));
-		cout<<"For event "<<ievent<<":"<<endl;
+		if(print_evt_info)
+			cout<<"For event "<<ievent<<":"<<endl;
 
 		//RawHit / SimHit association collection
 		auto& raw_hit_assocs = f.get<edm4eic::MCRecoTrackerHitAssociationCollection>("CentralTrackingRawHitAssociations");
@@ -164,16 +205,18 @@ void hit_matching(){
 		int matched_simhits(0);
 
 		//Loop over Simhit collections
-		cout<<"Number of SimHit collections = "<<sim_coll_names.size()<<endl;
+		if(print_evt_info) 
+			cout<<"Number of SimHit collections = "<<sim_coll_names.size()<<endl;
 		for(int icoll = 0; icoll < sim_coll_names.size(); icoll++){
 			//Simhits
 			auto coll_name = sim_coll_names.at(icoll);
 			auto& simhit_coll = f.get<edm4hep::SimTrackerHitCollection>(coll_name);
 			auto num_simhits = simhit_coll.size();
 
-			//Print Simhit info
-			printf("\nNumber of %s = %lu \n",coll_name.c_str(),num_simhits);
-			cout<<"Hit Collection ID | Hit Index | Hit CellID | Hit Quality | MC Index | MC PDG ID | MC Status"<<endl;
+			if(print_evt_info){
+				printf("\nNumber of %s = %lu \n",coll_name.c_str(),num_simhits);
+				cout<<"Hit Collection ID | Hit Index | Hit CellID | Hit Quality | MC Index | MC PDG ID | MC Status"<<endl;
+			}
 			for(int ihit = 0; ihit<num_simhits; ihit++){
 				auto hit = simhit_coll.at(ihit);
 				auto hit_collid = hit.getObjectID().collectionID;
@@ -187,7 +230,8 @@ void hit_matching(){
 				auto mc_pdg = hit_mcpart.getPDG();
 				auto mc_status = hit_mcpart.getGeneratorStatus();
 
-				printf("%d | %d | %lu | %d | %d| %d | %d \n",hit_collid, hit_index, hit_cellid, quality, mc_index, mc_pdg, mc_status);
+				if(print_evt_info)
+					printf("%u | %d | %lu | %d | %d| %d | %d \n",hit_collid, hit_index, hit_cellid, quality, mc_index, mc_pdg, mc_status);
 
 				if(mc_status==1 && quality==0) matched_simhits++;
 				tot_simhits++;
@@ -206,17 +250,20 @@ void hit_matching(){
 		int tot_rechits(0);
 		
 		//Loop over RecHit collections
-		cout<<endl<<endl;
-		cout<<"Number of RecHit collections = "<<rec_coll_names.size()<<endl;
+		if(print_evt_info){
+			cout<<endl<<endl;
+			cout<<"Number of RecHit collections = "<<rec_coll_names.size()<<endl;
+		}
 		for(int icoll = 0; icoll < rec_coll_names.size(); icoll++){
 			//RecHits
 			auto coll_name = rec_coll_names.at(icoll);
 			auto& rechit_coll = f.get<edm4eic::TrackerHitCollection>(coll_name);
 			auto num_rechits = rechit_coll.size();
 
-			//Print RecHit info for hits associated to the primary particle
-			printf("\nNumber of %s = %lu \n",coll_name.c_str(),num_rechits);
-			cout<<"Hit Collection ID | Hit Index | Hit CellID"<<endl;
+			if(print_evt_info){
+				printf("\nNumber of %s = %lu \n",coll_name.c_str(),num_rechits);
+				cout<<"Hit Collection ID | Hit Index | Hit CellID"<<endl;
+			}
 			for(int ihit = 0; ihit<num_rechits; ihit++){
 
 				auto hit = rechit_coll.at(ihit);
@@ -227,7 +274,8 @@ void hit_matching(){
 				//Hit positions
 				//printf("%f | %f | %f \n\n", hit.getPosition().x,hit.getPosition().y,hit.getPosition().z);
 				
-				printf("%d | %d | %lu \n",hit_collid, hit_index, hit_cellid);
+				if(print_evt_info)
+					printf("%u | %d | %lu \n",hit_collid, hit_index, hit_cellid);
 
 				//Find corresponding SimHit and check if it is associated w/ primary particle
 				auto raw_hit = hit.getRawHit();
@@ -309,7 +357,8 @@ void hit_matching(){
 		int num_out_wrong(0); //number of wrongly-identified outliers
 
 		//Print track and associated measurement RecHit info
-		cout<<endl<<endl<<"Number of tracks = "<<num_tracks<<endl;	
+		if(print_evt_info)
+			cout<<endl<<endl<<"Number of tracks = "<<num_tracks<<endl;	
 
 		for(int itrack = 0; itrack<num_tracks; itrack++){
 			
@@ -317,7 +366,8 @@ void hit_matching(){
 
 			//-------------
 			//Get measurements
-			cout<<"Track Index | Measurement number | Measurement CellID | Collection | Should be measurement?"<<endl;
+			if(print_evt_info)
+				cout<<"Track Index | Measurement number | Measurement CellID | Collection | Should be measurement?"<<endl;
 			auto meas2d = track.getMeasurements(); //Associated Measurement2D array
 			for( int imeas = 0; imeas < meas2d.size(); imeas++){
 				
@@ -357,13 +407,15 @@ void hit_matching(){
 					}
 				} //Loop over RawHit/SimHit associations 
 
-				printf("%d | %d | %lu | %s | %s \n",itrack, imeas, cellid, coll_name.c_str(), should_be_meas.c_str());
+				if(print_evt_info)
+					printf("%d | %d | %lu | %s | %s \n",itrack, imeas, cellid, coll_name.c_str(), should_be_meas.c_str());
 				num_meas++;
 			}
 
 			//-------------
 			//Get outliers (currently stored in Trajectory)
-			cout<<"Track Index | Outlier number | Measurement CellID | Collection | Should be measurement?"<<endl;
+			if(print_evt_info)
+				cout<<"Track Index | Outlier number | Measurement CellID | Collection | Should be measurement?"<<endl;
 			auto traj = track.getTrajectory();
 			auto out2d = traj.getOutliers_deprecated();
 
@@ -404,28 +456,34 @@ void hit_matching(){
 					}
 				} //Loop over RawHit/SimHit associations
 
-				printf("%d | %d | %lu | %s | %s \n",itrack, iout, cellid, coll_name.c_str(), should_be_meas.c_str());
+				if(print_evt_info)
+					printf("%d | %d | %lu | %s | %s \n",itrack, iout, cellid, coll_name.c_str(), should_be_meas.c_str());
 				num_out++;
 			}
 			
 		} //End loop over tracks
 
 		//Print some event statistics
-		cout<<endl<<"Event statistics:"<<endl;
-		cout<<"SimHits (Barrel MPGD corrected) associated with primary particle = "<<matched_simhits<<" / "<<tot_simhits<<endl;
-		cout<<"RecHits associated with primary particle = "<<tot_rechits<<endl;
-		cout<<"Number of correctly-identified measurement hits = "<<num_meas_corr<<" / "<<num_meas<<endl;
-		cout<<"Number of outlier hits that should be measurement hits = "<<num_out_wrong<<" / "<<num_out<<endl;
+		if(print_evt_info){
+			cout<<endl<<"Event statistics:"<<endl;
+			cout<<"SimHits (Barrel MPGD corrected) associated with primary particle = "<<matched_simhits<<" / "<<tot_simhits<<endl;
+			cout<<"RecHits associated with primary particle = "<<tot_rechits<<endl;
+			cout<<"Number of correctly-identified measurement hits = "<<num_meas_corr<<" / "<<num_meas<<endl;
+			cout<<"Number of outlier hits that should be measurement hits = "<<num_out_wrong<<" / "<<num_out<<endl;
+		}
 
 		//Total number of hits (meas. + out.) in track that are associated to a primary-particle hit
 		auto track_assoc_hit_tot = num_meas_corr+num_out_wrong;
 		//Total number of digitized hits (RecHits) associated with primary particle completely missing from track
 		auto simhits_missing = matched_simhits - track_assoc_hit_tot;
 		auto rechits_missing = simhits_missing - ( matched_simhits - tot_rechits ); //Don't count any hits lost during digitization
-		cout<<"Number of RecHits associated with primary particle completely missing from track = "<<rechits_missing<<" / "<<tot_rechits<<endl;
+		
+		if(print_evt_info) 
+			cout<<"Number of RecHits associated with primary particle completely missing from track = "<<rechits_missing<<" / "<<tot_rechits<<endl;
 
 		//Add line between events
-		cout<<endl<<"---------------"<<endl;
+		if(print_evt_info)
+			cout<<endl<<"---------------"<<endl;
 
 		//Fill histograms
 
@@ -507,6 +565,7 @@ void hit_matching(){
         legend2->Draw();
 
 	//Print plots to file
+	cout<<endl;
 	c1->Print("plots/hit_matching.pdf[");
 	c1->Print("plots/hit_matching.pdf");
 	c2->Print("plots/hit_matching.pdf");

@@ -113,7 +113,7 @@ def add_map_and_matrix_to_options(nmerge, options)
   # generate approriate mapping, add to options
   mapping = make_phi_mapping(nmerge)
   matrix  = make_adjacency_matrix(nmerge)
-  options.concat(" -PBHCAL:HcalBarrelMergedHits:mappings=#{mapping}")
+  options.concat(" -PBHCAL:HcalBarrelMergedHits:fieldTransformations=#{mapping}")
          .concat(" -PBHCAL:HcalBarrelIslandProtoClusters:adjacencyMatrix=#{matrix}")
 
 end
