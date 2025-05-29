@@ -27,9 +27,6 @@ root -l -n yourMacro.C (RECOFILE, ANAFILE)
 
 
 
-
-Hi all, here is some basic info on nHcal/EPIC beginners
-
 * * *
 EPIC Analysis Workflow: Simulation → Reconstruction → Analysis
 ================================================================
@@ -66,16 +63,6 @@ Step 1: **Simulation**
     
 *   [DD4hep Manual](https://dd4hep.web.cern.ch/dd4hep/usermanuals/DD4hepManual/DD4hepManual.pdf)
     
-
-### Detector Description Files for nHcal
-
-From the `epic/` repository:
-
-*   [`backward.xml`](https://github.com/eic/epic/blob/main/compact/hcal/backward.xml) — full geometry description
-    
-*   [`definitions.xml`](https://github.com/eic/epic/blob/main/compact/definitions.xml#L649-L654) — constants  which are used in `backward.xml`
-    
-*   [`PolyhedraEndcapCalorimeter2_geo.cpp`](https://github.com/eic/epic/blob/main/src/PolyhedraEndcapCalorimeter2_geo.cpp) — geometry implementation code
 * * *
 
  Step 2: **Reconstruction**
@@ -86,7 +73,7 @@ From the `epic/` repository:
 *    [EICRecon GitHub Repository](https://github.com/eic/EICrecon)
     
 
-### Parameter Configuration
+### Parameter Configuration (nHcal example file)
 
 *   [`EICRecon/src/detectors/EHCAL/EHCAL.cc`](https://github.com/eic/EICrecon/blob/main/src/detectors/EHCAL/EHCAL.cc) — example of parameter tuning for reconstruction (clustering parameters)    
 
