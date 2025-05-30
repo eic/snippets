@@ -50,9 +50,11 @@ void TreePrune(TString infile=""){
   full_file->GetObject("events", full_tree);
   // Deactivate all branches
   full_tree->SetBranchStatus("*", 0);
-  // Activate only the branches we want to keep, add more as needed via the line below
+  // Activate only the branches we want to keep, add more as needed via the line below. Just intert your branch name in the speech marks. Wildcards (*) work.
   // full_tree->SetBranchStatus("",1)
   full_tree->SetBranchStatus("MCParticles*",1);
+  full_tree->SetBranchStatus("*_MCParticles*",1);
+  full_tree->SetBranchStatus("MCParticlesHeadOnFrameNoBeamFX*",1);
   full_tree->SetBranchStatus("ReconstructedChargedParticles*",1);
   full_tree->SetBranchStatus("ReconstructedChargedParticleAssociations*",1);
   // Note that the wild card after the branch name is needed to ensure all leaves are retained adequately. You could only retain specific leaves if you wanted to though e.g. MCParticles.PDG
