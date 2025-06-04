@@ -23,5 +23,19 @@ DD4hep, etc.)
 First, the plugin will need to be compiled:
 
 ```
-/* TODO fill in rest */
+# set installation path if you haven't already
+mkdir ~/EICrecon_MY
+export EICrecon_MY=~/EICrecon_MY
+
+# now build plugin
+cmake -S ClusterMergedHits -B ClusterMergedHits/build
+cmake --build ClusterMergedHits/build --target install -- -j8
+```
+
+Things like input/output files are set in `RunEICReconWithTileMerging.rb`.
+And then we can run EICrecon and merge `N` adjacent tiles together with:
+
+
+```
+./RunEICReconWithTileMerging.rb <N>
 ```
