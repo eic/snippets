@@ -23,8 +23,8 @@
 #include <TSystem.h>
 // podio libraries
 #include <podio/Frame.h>
+#include <podio/ROOTReader.h>
 #include <podio/CollectionBase.h>
-#include <podio/ROOTFrameReader.h>
 // edm4eic types
 #include <edm4eic/Cluster.h>
 #include <edm4eic/ClusterCollection.h>
@@ -64,7 +64,7 @@ void ReadInAssociationsAndContributions(const Options& opt = DefaultOptions) {
   std::cout << "\n  Beginning cluster-track projection matching macro!" << std::endl;
 
   // open file w/ frame reader
-  podio::ROOTFrameReader reader = podio::ROOTFrameReader();
+  podio::ROOTReader reader = podio::ROOTReader();
   reader.openFile( opt.in_file );
   std::cout << "    Opened ROOT-based frame reader." << std::endl;
 
