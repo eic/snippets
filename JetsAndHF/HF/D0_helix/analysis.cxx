@@ -158,7 +158,8 @@ int main(int argc, char **argv)
 
   TTreeReaderArray<unsigned int> assocChSimID = {treereader, "ReconstructedChargedParticleAssociations.simID"};
   TTreeReaderArray<unsigned int> assocChRecID = {treereader, "ReconstructedChargedParticleAssociations.recID"};
-  
+  TTreeReaderArray<float> assocWeight = {treereader, "ReconstructedChargedParticleAssociations.weight"};
+
   TTreeReaderArray<float> rcMomPx = {treereader, "ReconstructedChargedParticles.momentum.x"};
   TTreeReaderArray<float> rcMomPy = {treereader, "ReconstructedChargedParticles.momentum.y"};
   TTreeReaderArray<float> rcMomPz = {treereader, "ReconstructedChargedParticles.momentum.z"};
@@ -222,10 +223,25 @@ int main(int argc, char **argv)
       int nAssoc = assocChRecID.GetSize();
       map<int, int> assoc_map_to_rc;
       map<int, int> assoc_map_to_mc;
-      for(int j=0; j<nAssoc; j++)
+      for(unsigned int rc_index=0; rc_index<rcMomPx.GetSize(); rc_index++)
 	{
-	  assoc_map_to_rc[assocChSimID[j]] = assocChRecID[j];
-	  assoc_map_to_mc[assocChRecID[j]] = assocChSimID[j];
+	  // loop over the association to find the matched MC particle
+	  // with largest weight
+	  double max_weight = 0;
+	  int matched_mc_index = -1;
+	  for(int j=0; j<nAssoc; j++)
+	    {
+	      if(assocChRecID[j] != rc_index) continue;
+	      if(assocWeight[j] > max_weight)
+		{
+		  max_weight = assocWeight[j];
+		  matched_mc_index = assocChSimID[j];
+		}
+	    }
+
+	  // build the map
+	  assoc_map_to_rc[matched_mc_index] = rc_index;
+	  assoc_map_to_mc[rc_index] = matched_mc_index;
 	}
 
       // ===== look for D0 -> pi+K
