@@ -1,7 +1,7 @@
 //------------------
 // energy_set 0 is 18x275 GeV
 // energy_set 1 is 10x100 GeV
-void hit_based_matching(int energy_set = 0, int Q2_set = 1){
+void hit_based_matching(int energy_set = 0, int Q2_set = 1, bool use_campaign = 0){
 
     //Define Style
     gStyle->SetOptStat(0);
@@ -93,40 +93,34 @@ void hit_based_matching(int energy_set = 0, int Q2_set = 1){
     h6b->SetLineColor(kBlack);h6b->SetLineWidth(2);
 
     //File information
-    TString path = "./input/";
-    TString run_name;
-    TString beam_energies;
+    TString path;
+    if(use_campaign) path = "./campaign_input/";
+    else path = "./input/";
 
-    if(energy_set == 0 && Q2_set == 1){
-        beam_energies = "18x275";
-        run_name = "Q2_1/eicrecon_*.root"; //Pythia8 DIS events with 18x275 GeV and Q2>1 GeV2
-    }
-    else if(energy_set == 0 && Q2_set == 10){
-        beam_energies = "18x275";
-        run_name = "eicrecon_out_E_18_275_Q2_10.root"; //Pythia8 DIS events with 18x275 GeV and Q2>10 GeV2
-    }
-    else if(energy_set == 0 && Q2_set == 100){
-        beam_energies = "18x275";
-        run_name = "Q2_100/eicrecon_*.root"; //Pythia8 DIS events with 18x275 GeV and Q2>100 GeV2
-    }
-    else if(energy_set == 1 && Q2_set == 1){
-        beam_energies = "10x100";
-        run_name = "eicrecon_out_E_10_100_Q2_1.root"; //Pythia8 DIS events with 10x100 GeV and Q2>1 GeV2
-    }
-    else if(energy_set == 1 && Q2_set == 10){
-        beam_energies = "10x100";
-        run_name = "eicrecon_out_E_10_100_Q2_10.root"; //Pythia8 DIS events with 10x100 GeV and Q2>10 GeV2
-    }
-    else if(energy_set == 1 && Q2_set == 100){
-        beam_energies = "10x100";
-        run_name = "eicrecon_out_E_10_100_Q2_100.root"; //Pythia8 DIS events with 10x100 GeV and Q2>100 GeV2
-    }
+    TString beam_energies;
+    if(energy_set == 0) beam_energies = "18x275";
+    else if(energy_set == 1) beam_energies = "10x100";
+
+    TString run_name;
+    if(use_campaign) run_name.Form("list_%s_Q2_%d.txt",beam_energies.Data(),Q2_set);
+    else run_name.Form("%s/Q2_%d/eicrecon_*root",beam_energies.Data(),Q2_set);
 
     //Open File
     TString input = path + run_name;
     TChain *tree = new TChain("events");
-    tree->Add(input.Data());
 
+    if(use_campaign){
+        std::ifstream in(input);
+        std::string file("");
+        while (in >> file)
+                tree->Add(file.data());
+        in.close();
+    }
+    else{
+        tree->Add(input.Data());
+   }
+
+    cout<<"Running file "<<input<<"!"<<endl;
     cout<<"Analyzing "<<tree->GetEntries()<<" events!"<<endl;
 
     //Create Array Reader
@@ -134,9 +128,9 @@ void hit_based_matching(int energy_set = 0, int Q2_set = 1){
 
     TTreeReaderArray<int>   gen_status(tr, "MCParticles.generatorStatus");
     TTreeReaderArray<int>   gen_pid(tr, "MCParticles.PDG");
-    TTreeReaderArray<float> gen_px(tr, "MCParticles.momentum.x");
-    TTreeReaderArray<float> gen_py(tr, "MCParticles.momentum.y");
-    TTreeReaderArray<float> gen_pz(tr, "MCParticles.momentum.z");
+    TTreeReaderArray<double> gen_px(tr, "MCParticles.momentum.x");
+    TTreeReaderArray<double> gen_py(tr, "MCParticles.momentum.y");
+    TTreeReaderArray<double> gen_pz(tr, "MCParticles.momentum.z");
     TTreeReaderArray<double> gen_mass(tr, "MCParticles.mass"); //Not important here
     TTreeReaderArray<float> gen_charge(tr, "MCParticles.charge");
     TTreeReaderArray<double> gen_vx(tr, "MCParticles.vertex.x");
