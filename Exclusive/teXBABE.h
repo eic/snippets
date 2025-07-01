@@ -19,7 +19,7 @@ Double_t Calc_teXBABE(PxPyPzEVector Vec_eSc, PxPyPzEVector Vec_X, PxPyPzEVector 
 }
 
 // Shortened method to calculate teXBABE where inputs are PMiss, BA vector, BA mass and HBeam only
-Double_t Calc_tEXBABE(PxPyPzEVector Vec_PMiss, PxPyPzEVector Vec_BA, Double_t Mass_BA, PxPyPzEVector Vec_HBeam){
+Double_t Calc_teXBABE(PxPyPzEVector Vec_PMiss, PxPyPzEVector Vec_BA, Double_t Mass_BA, PxPyPzEVector Vec_HBeam){
   // "Correct" the BA vector - utilise knowledge of the final state and the POSITION resolution of the original BA track
   Vec_BACorr.SetPxPyPzE(Vec_PMiss.P()*sin(Vec_BA.Theta())*cos(Vec_BA.Phi()), Vec_PMiss.P()*sin(Vec_BA.Theta())*sin(Vec_BA.Phi()), Vec_PMiss.P()*cos(Vec_BA.Theta()), sqrt(pow(Vec_PMiss.P(),2)+(pow(Mass_BA,2))));
   Double_t t_eXBABE = -1*((Vec_HBeam - Vec_BACorr).mag2());
@@ -27,7 +27,7 @@ Double_t Calc_tEXBABE(PxPyPzEVector Vec_PMiss, PxPyPzEVector Vec_BA, Double_t Ma
 }
 
 // Shortest method, inputs are corrected BA vector and HBeam only
-Double_t Calc_tEXBABE(PxPyPzEVector Vec_BACorr, PxPyPzEVector Vec_HBeam){
+Double_t Calc_teXBABE(PxPyPzEVector Vec_BACorr, PxPyPzEVector Vec_HBeam){
   Double_t t_eXBABE = -1*((Vec_HBeam - Vec_BACorr).mag2());
   return(t_eXBABE);
 }
