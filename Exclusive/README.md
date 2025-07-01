@@ -19,7 +19,7 @@ The header file here contains functions for calculating the following quantities
 
 The functions take as input the 4 vectors for particles identified within an ePIC event. These 4-vectors can take the form of any type which includes the relevant operators: `.E()`, `.P()`, `.Pt()` and `.M2()`. ROOT's legacy `TLorentzVector` class, and its more recent replacement, `ROOT::Math::LorentzVector`, both contain all of the operators required.
 
-## `tEXBABE.h`
+## `teXBABE.h`
 
 A header file to calculate teXBABE. This is a generic formulation of a calculation used in the analysis of DEMP events. Vectors and inputs have been named generically to match the tRECO convention for ease of use and readability.
 
