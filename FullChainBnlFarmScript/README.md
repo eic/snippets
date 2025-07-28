@@ -59,7 +59,7 @@ Step 1: **Simulation**
 *   [eic/epic](https://github.com/eic/epic) — detector geometry, compact files, configurations
 ###  Tools: `ddsim` / `npsim` with Geant4
 
-*   [Single Particle Simulation Tutorial](https://eic.github.io/tutorial-simulations-using-ddsim-and-geant4/01-single-particle-simulations/index.html)
+*   [Single Particle Simulation Tutorial](https://eic.github.io/tutorial-simulations-using-npsim-and-geant4/01-single-particle-simulations/index.html)
     
 *   [DD4hep Manual](https://dd4hep.web.cern.ch/dd4hep/usermanuals/DD4hepManual/DD4hepManual.pdf)
     
