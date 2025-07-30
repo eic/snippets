@@ -1,6 +1,6 @@
 # snippets
 
-A repository to host user-created snippets: macros, scripts, plugins, and more related to software, hardware data, and analysis at the Electron-Ion Collider (EIC).
+A repository to host user-created snippets: macros, scripts, plugins, and more related to software, hardware data, and analysis at the Electron-Ion Collider (EIC).  Note that this repository is intended solely to share useful code snippets, and any code committed here has no guarantee of maintenance.
 
 [![Monthly Commits](https://img.shields.io/github/commit-activity/m/eic/snippets.svg)](https://github.com/eic/snippets/commits/main)
 [![Last Commit](https://img.shields.io/github/last-commit/eic/snippets.svg)](https://github.com/eic/eic/snippets/commits/main)
