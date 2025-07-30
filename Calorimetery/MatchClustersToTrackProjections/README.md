@@ -21,5 +21,5 @@ in the eic-shell, then the commands below will run it out of the box.
 After setting desired parameters at the top of the macro:
 
 ```
-root -b -q MatchProjectionsAndClusters.cxx++
+root -b -q MatchProjectionsAndClusters.cxx
 ```

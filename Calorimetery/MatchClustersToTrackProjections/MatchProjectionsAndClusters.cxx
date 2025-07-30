@@ -45,11 +45,11 @@ struct Options {
   std::string projections;  // name of collection of track projections
   uint64_t    system;       // system id of calo to match to
 } DefaultOptions = {
-  "normal/forQuickAssociationAnswers_normalMode_nEvt500.py8s18x275minq100ang0025div1.run0file0.podio.root",
+  "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.06.1/epic_craterlake/DIS/NC/10x100/minQ2=10/pythia8NCDIS_10x100_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.1287.eicrecon.edm4eic.root",
   "test.root",
-  "HcalEndcapNClusters",
+  "EcalBarrelClusters",
   "CalorimeterTrackProjections",
-  113
+  101 //< see https://github.com/eic/epic/blob/main/compact/definitions.xml
 };
 
 
