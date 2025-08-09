@@ -972,7 +972,7 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
 
     // Coordinate of the Circumsphere center is the decayvertex in 3D (A point at equal distance of three PCA)
  
-  //TVector3 decayVertex = p1 + a_to_CircumsphereCenter; // uncomment it if you want to define as circhumspere center
+  //TVector3 decayVertex = p1 + a_to_CircumsphereCenter; // uncomment it if you want to define as circumsphere center
 
   // printf("dist_p1_to_decayvertex = (%1.4f) \t dist_p2_to_decayvertex = (%1.4f) \t dist_p3_to_decayvertex = (%1.4f) \n", (p1-decayVertex).Mag(), (p2-decayVertex).Mag(), (p3-decayVertex).Mag());
 
