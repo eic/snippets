@@ -1,8 +1,4 @@
-// Λc⁺ → p K⁻ π⁺ reconstruction with (6.28 ± 0.32)%
-// root [1] TDatabasePDG *pdgDB = TDatabasePDG::Instance();
-//root [2] TParticlePDG *particle = pdgDB->GetParticle(4122);
-// TParticlePDG *particle = pdgDB->GetParticle("Lambda_c+");
-//root [3] particle->Print()  select all and (ctrl+shift+P) reindent all the code 
+// Λc⁺ → p K⁻ π⁺ reconstruction with (6.28 ± 0.32)% 
 // Mass:  2.28646 ± 0.00014 GeV/c²
 // Shyam Kumar; INFN Bari, Italy
 // shyam.kumar@ba.infn.it; shyam055119@gmail.com 
