@@ -695,10 +695,9 @@ for(int imc=0; imc<nMCPart; imc++)
       h3PairCosTheta[0]->Fill(parent.Pt(), parent.Rapidity(), cosTheta);
       h3PairDca[0]->Fill(parent.Pt(), parent.Rapidity(), V0DcaToVtx);
       h3PairDecayLength[0]->Fill(parent.Pt(), parent.Rapidity(), decayLength);
-		      //printf("Signal: dca12 = %2.4f, cosTheta = %2.4f, D0dca = %2.4f, decay = %2.4f\n", dcaDaughters, cosTheta, V0DcaToVtx, decayLength);
       h3InvMass[0][0]->Fill(parent.Pt(), parent.Rapidity(), parent.M());
 
-                // Toplogical Variables for Signal
+      // Toplogical Variables for Signal
       d0_p_sig = dcaToVtx_p.Mag();
       d0_k_sig = dcaToVtx_k.Mag();
       d0_pi_sig = dcaToVtx_pi.Mag();		      
@@ -728,11 +727,9 @@ for(int imc=0; imc<nMCPart; imc++)
       h3PairCosTheta[1]->Fill(parent.Pt(), parent.Rapidity(), cosTheta);
       h3PairDca[1]->Fill(parent.Pt(), parent.Rapidity(), V0DcaToVtx);
       h3PairDecayLength[1]->Fill(parent.Pt(), parent.Rapidity(), decayLength);
-
-		      //printf("Bkg: dca12 = %2.4f, cosTheta = %2.4f, D0dca = %2.4f, decay = %2.4f\n", dcaDaughters, cosTheta, V0DcaToVtx, decayLength);
       h3InvMass[1][0]->Fill(parent.Pt(), parent.Rapidity(), parent.M());
 
-		      // Toplogical Variables for Bkg
+	  // Toplogical Variables for Bkg
       d0_p_bkg = dcaToVtx_p.Mag();
       d0_k_bkg = dcaToVtx_k.Mag();
       d0_pi_bkg = dcaToVtx_pi.Mag();		      
