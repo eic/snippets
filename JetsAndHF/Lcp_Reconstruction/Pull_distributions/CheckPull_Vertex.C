@@ -30,6 +30,7 @@ void CheckPull_Vertex(TString filelist = "test_D0.list"){
      TH1F *hResVtxX = new TH1F("hResVtxX", "Residual x distribution (Ntracks > 1) of Primary vertex;(Vx_{rec}-Vx_{mc}) (mm); Entries (a.u.)", 1000, -10., 10.);
      TH1F *hResVtxY = new TH1F("hResVtxY", "Residual y distribution (Ntracks > 1) of Primary vertex;(Vy_{rec}-Vy_{mc}) (mm); Entries (a.u.)", 1000, -10., 10.);
      TH1F *hResVtxZ = new TH1F("hResVtxZ", "Residual z distribution (Ntracks > 1) of Primary vertex;(Vz_{rec}-Vz_{mc}) (mm); Entries (a.u.)", 2000, -5., 5.);
+     TH1F *hChi2 = new TH1F("hChi2", "Chi2 distribution (Ntracks > 1) of Primary vertex; #chi^{2}; Entries (a.u.)", 2000, 0., 200.);
      
      TFile *fout = new TFile(Form("Pull_distribution_vertex_%s.root",filelist.Data()),"recreate");
      
@@ -81,6 +82,7 @@ void CheckPull_Vertex(TString filelist = "test_D0.list"){
 	TTreeReaderArray<float> CTVerr_xx = {treereader, "CentralTrackVertices.positionError.xx"};
 	TTreeReaderArray<float> CTVerr_yy = {treereader, "CentralTrackVertices.positionError.yy"};
 	TTreeReaderArray<float> CTVerr_zz = {treereader, "CentralTrackVertices.positionError.zz"};
+	TTreeReaderArray<float> CTVchi2 = {treereader, "CentralTrackVertices.chi2"};
 	TTreeReaderArray<int> prim_vtx_index = {treereader, "PrimaryVertices_objIdx.index"};
      TTreeReaderArray<float> rcCharge = {treereader, "ReconstructedChargedParticles.charge"};
 	
@@ -103,11 +105,13 @@ void CheckPull_Vertex(TString filelist = "test_D0.list"){
       // get RC primary vertex and it's error
      TVector3 vertex_rc(-999., -999., -999.);
      TVector3 err_vertex_rc(-999., -999., -999.);
+     double chi2 = 0.;
      if(prim_vtx_index.GetSize()>0)
 	{
 	  int rc_vtx_index = prim_vtx_index[0];
 	  vertex_rc.SetXYZ(CTVx[rc_vtx_index], CTVy[rc_vtx_index], CTVz[rc_vtx_index]);
 	  err_vertex_rc.SetXYZ(sqrt(CTVerr_xx[rc_vtx_index]), sqrt(CTVerr_yy[rc_vtx_index]), sqrt(CTVerr_zz[rc_vtx_index]));
+	  chi2 = CTVchi2[rc_vtx_index];
 	}
 	hPullVtxX->Fill((vertex_rc.x()-vertex_mc.x())/err_vertex_rc.x()); 
 	hPullVtxY->Fill((vertex_rc.y()-vertex_mc.y())/err_vertex_rc.y()); 
@@ -126,7 +130,9 @@ void CheckPull_Vertex(TString filelist = "test_D0.list"){
      
      hResVtxX->Fill((vertex_rc.x()-vertex_mc.x())); 
 	hResVtxY->Fill((vertex_rc.y()-vertex_mc.y())); 
-     hResVtxZ->Fill((vertex_rc.z()-vertex_mc.z()));	
+     hResVtxZ->Fill((vertex_rc.z()-vertex_mc.z()));
+     hChi2->Fill(chi2);
+     	
      }
            
      nevents++;
@@ -145,7 +151,8 @@ void CheckPull_Vertex(TString filelist = "test_D0.list"){
 	hPullVtxZ_2->Write();	
 	hResVtxX->Write();
 	hResVtxY->Write();
-	hResVtxZ->Write();		
+	hResVtxZ->Write();	
+	hChi2->Write();	
 	fout->Close();
 	delete inputstream;
 	delete chain;
