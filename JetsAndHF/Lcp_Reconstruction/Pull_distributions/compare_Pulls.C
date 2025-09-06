@@ -1,4 +1,4 @@
-// Macro to read corryverkan outpufile event by event basis
+// Macro to superimpose the pull distributions
 // Shyam Kumar; INFN Bari, shyam.kumar@ba.infn.it
 
 void compare_Pulls(TString name ="objectname", TString histtitle=""){
