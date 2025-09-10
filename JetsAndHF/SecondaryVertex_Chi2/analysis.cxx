@@ -158,29 +158,35 @@ int main(int argc, char **argv)
   char filename[512];
   ifstream *inputstream = new ifstream;
   inputstream->open(listname.Data());
-  if(!inputstream)
+  if (!inputstream->is_open())
+  {
+  printf("[e] Cannot open file list: %s\n", listname.Data());
+  return 0; // or handle as needed
+  }
+
+  while (inputstream->good())
+  {
+  inputstream->getline(filename, 512);
+  if (inputstream->good())
+  {
+    TFile *ftmp = TFile::Open(filename, "READ");
+    if (!ftmp || !ftmp->IsOpen() || !ftmp->GetNkeys())
     {
-      printf("[e] Cannot open file list: %s\n", listname.Data());
+      printf("[e] Skipping bad file: %s\n", filename);
+      if (ftmp) { ftmp->Close(); delete ftmp; }
+      continue; 
     }
-  while(inputstream->good())
-    {
-      inputstream->getline(filename, 512);
-      if(inputstream->good())
-	{
-	  TFile *ftmp = TFile::Open(filename, "read");
-	  if(!ftmp||!(ftmp->IsOpen())||!(ftmp->GetNkeys())) 
-	    {
-	      printf("[e] Could you open file: %s\n", filename);
-	    } 
-	  else
-	    {
-	      cout<<"[i] Add "<<nfiles<<"th file: "<<filename<<endl;
-	      chain->Add(filename);
-	      nfiles++;
-	    }
-	}
-    }
+    cout << "[i] Add " << nfiles << "th file: " << filename << endl;
+    chain->Add(filename);
+    nfiles++;
+
+    ftmp->Close(); // cleanup
+    delete ftmp;
+  }
+}
+
   inputstream->close();
+
   printf("[i] Read in %d files with %lld events in total\n", nfiles, chain->GetEntries());
 
   TH1F *hEventStat = new TH1F("hEventStat", "Event statistics", 7, 0, 7);
