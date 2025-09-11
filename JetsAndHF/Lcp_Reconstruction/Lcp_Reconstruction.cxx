@@ -1182,6 +1182,7 @@ void getDecayVertex_chi2fit(const int index1, const int index2, const int index3
    for (int i = 0; i < nPar; ++i) parFitErr[i] = FitErr[i];
 
     vertex.SetXYZ(parFit[0], parFit[1], parFit[2]);
+	s1 = parFit[3]; s2 = parFit[4]; 
 
 
 }
