@@ -1,3 +1,5 @@
+// Macro to check daughters of Lc+ baryon 
+// Shyam Kumar; INFN Bari, shyam.kumar@ba.infn.it
 void Check_daughters(TString filelist = "test_Lc.list")
 {
     
