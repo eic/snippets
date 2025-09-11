@@ -812,9 +812,9 @@ for(int imc=0; imc<nMCPart; imc++)
 		      hRes_SVy_Helixfit->Fill((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
 		      hRes_SVz_Helixfit->Fill((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);	
 		      
-		      hRes_SVx_Helixfit_pull->Fill(((decayVertex.X()-MCVertex_Kaon.X()*0.1)*10)/sqrt(err_Par[0]));
-		      hRes_SVy_Helixfit_pull->Fill(((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10)/sqrt(err_Par[1]));
-		      hRes_SVz_Helixfit_pull->Fill(((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10)/sqrt(err_Par[2]));
+		      hRes_SVx_Helixfit_pull->Fill(((decayVertex.X()-MCVertex_Kaon.X()*0.1))/err_Par[0]);
+		      hRes_SVy_Helixfit_pull->Fill(((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/err_Par[1]);
+		      hRes_SVz_Helixfit_pull->Fill(((decayVertex.Z()-MCVertex_Kaon.Z()*0.1))/err_Par[2]);
         		      
         if (q_proton == 1 && q_kaon == -1 && q_pion == 1)
         hEventStat->Fill(4.5);   // Λc⁺
