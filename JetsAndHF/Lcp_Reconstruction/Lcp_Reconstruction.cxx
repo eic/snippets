@@ -1,5 +1,4 @@
-// Λc⁺ → p K⁻ π⁺ reconstruction with (6.28 ± 0.32)% 
-// Mass:  2.28646 ± 0.00014 GeV/c²
+// Λc⁺ → p K⁻ π⁺ reconstruction with (6.28 ± 0.32)%
 // Shyam Kumar; INFN Bari, Italy
 // shyam.kumar@ba.infn.it; shyam055119@gmail.com 
 
@@ -48,6 +47,10 @@
 #include "TTreeReaderValue.h"
 #include "TTreeReaderArray.h"
 #include "TLatex.h"
+#include "TMinuit.h"
+#include "Math/Functor.h"
+#include "Fit/Fitter.h"
+#include "Math/Minimizer.h"
 #endif
 #include "StPhysicalHelix.h"
 #include "SystemOfUnits.h"
@@ -67,10 +70,11 @@ bool debug = false;
 
 const double bField = -1.7; // Tesla
 
+void getDecayVertex_chi2fit(const int index1, const int index2, const int index3, double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr);
 TVector3 GetDCAToPrimaryVertex(const int index, TVector3 vtx);
 
 TLorentzVector GetDCADaughters(const int index1, const int index2, const int index3, TVector3 vtx,
-  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx);
+  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, double *parFitErr);
 
 TTreeReaderArray<float> *rcMomPx2;
 TTreeReaderArray<float> *rcMomPy2;
@@ -81,6 +85,86 @@ TTreeReaderArray<float> *rcTrkLoca2;
 TTreeReaderArray<float> *rcTrkLocb2;
 TTreeReaderArray<float> *rcTrkTheta2;
 TTreeReaderArray<float> *rcTrkPhi2;
+TTreeReaderArray<std::array<float, 21>> *rcTrkCov;
+
+// Define function for Chi2 minimization between two helices	
+struct Chi2Minimization {    
+     StPhysicalHelix fhelix1, fhelix2, fhelix3;
+     std::array<float, 21> fcov1, fcov2, fcov3; // full covariance matrix
+     
+     Chi2Minimization(StPhysicalHelix helix1, StPhysicalHelix helix2, StPhysicalHelix helix3, std::array<float, 21> cov1, std::array<float, 21> cov2, std::array<float, 21> cov3) : fhelix1(helix1),fhelix2(helix2), fhelix3(helix3), fcov1(cov1), fcov2(cov2), fcov3(cov3) {}
+    // Implementation of the function to be minimized
+    double operator() (const double *par) {
+    double x = par[0];
+    double y = par[1];
+    double z = par[2];
+    double s1 = par[3];
+    double s2 = par[4];
+    double s3 = par[5];    
+    double f = 0;
+    TVector3 vertex(x, y, z);
+    TVector3 p1 = fhelix1.at(s1);
+    TVector3 p2 = fhelix2.at(s2);
+    TVector3 p3 = fhelix3.at(s3);
+    TVector3 mom1 = fhelix1.momentumAt(s1,  bField * tesla);
+    TVector3 mom2 = fhelix2.momentumAt(s2,  bField * tesla);
+    TVector3 mom3 = fhelix3.momentumAt(s3,  bField * tesla);
+     // x= −l0 sinϕ , y=l0 cosϕ , z=l
+   // Recalculate l0 at PCA for error propagation
+  float l0_track1 = p1.Pt(); float l1_track1 = p1.Z(); double phi_track1 = mom1.Phi();
+  float l0_track2 = p2.Pt(); float l1_track2 = p2.Z(); double phi_track2 = mom2.Phi();
+  float l0_track3 = p3.Pt(); float l1_track3 = p3.Z(); double phi_track3 = mom3.Phi();  
+     // Track1: σx^2​=sin^2ϕ⋅σℓ0​^2​+ℓ0^2​cos^2ϕ⋅σϕ^2​+2⋅ℓ0​sinϕcosϕ⋅Cov(ℓ0​,ϕ)
+  float sigx1_2 = sin(phi_track1)*sin(phi_track1)*fcov1[0] + l0_track1*l0_track1*cos(phi_track1)*cos(phi_track1)*fcov1[5]+ 2.0*l0_track1*sin(phi_track1)*cos(phi_track1)*fcov1[3]; 
+  float sigx2_2 = sin(phi_track2)*sin(phi_track2)*fcov2[0] + l0_track2*l0_track2*cos(phi_track2)*cos(phi_track2)*fcov2[5]+ 2.0*l0_track2*sin(phi_track2)*cos(phi_track2)*fcov2[3];
+  float sigx3_2 = sin(phi_track3)*sin(phi_track3)*fcov3[0] + l0_track3*l0_track3*cos(phi_track3)*cos(phi_track3)*fcov3[5]+ 2.0*l0_track3*sin(phi_track3)*cos(phi_track3)*fcov3[3];
+  
+     // σy^2​=cos^2ϕ⋅σℓ0^​2​+ℓ0^2​sin^2ϕ⋅σϕ^2​−2⋅ℓ0​sinϕcosϕ⋅Cov(ℓ0​,ϕ)
+  float sigy1_2 = cos(phi_track1)*cos(phi_track1)*fcov1[0] + l0_track1*l0_track1*sin(phi_track1)*sin(phi_track1)*fcov1[5]-2.0*l0_track1*sin(phi_track1)*cos(phi_track1)*fcov1[3]; 
+  float sigy2_2 = cos(phi_track2)*cos(phi_track2)*fcov2[0] + l0_track2*l0_track2*sin(phi_track2)*sin(phi_track2)*fcov2[5]-2.0*l0_track2*sin(phi_track2)*cos(phi_track2)*fcov2[3]; 
+  float sigy3_2 = cos(phi_track3)*cos(phi_track3)*fcov3[0] + l0_track3*l0_track3*sin(phi_track3)*sin(phi_track3)*fcov3[5]-2.0*l0_track3*sin(phi_track3)*cos(phi_track3)*fcov3[3]; 
+     
+     // σz^2​
+  float sigz1_2 = fcov1[2];
+  float sigz2_2 = fcov2[2]; 
+  float sigz3_2 = fcov3[2];   
+  double d1_x = 10.*(vertex - p1).X(); double d2_x = 10.*(vertex - p2).X(); double d3_x = 10.*(vertex - p3).X();
+  double d1_y = 10.*(vertex - p1).Y(); double d2_y = 10.*(vertex - p2).Y(); double d3_y = 10.*(vertex - p3).Y();
+  double d1_z = 10.*(vertex - p1).Z(); double d2_z = 10.*(vertex - p2).Z(); double d3_z = 10.*(vertex - p3).Z();
+    
+  f = d1_x*d1_x/sigx1_2 + d2_x*d2_x/sigx2_2 + d3_x*d3_x/sigx3_2 + d1_y*d1_y/sigy1_2 + d2_y*d2_y/sigy2_2 + d3_y*d3_y/sigy3_2 + d1_z*d1_z/sigz1_2+ d2_z*d2_z/sigz2_2 + d3_z*d3_z/sigz3_2; // chi2 
+
+      return f;
+	}
+	};
+
+
+// Define function for Distance2 minimization between three helices	
+struct Distance2Minimization {    
+     StPhysicalHelix fhelix1, fhelix2, fhelix3;
+     Distance2Minimization(StPhysicalHelix helix1, StPhysicalHelix helix2, StPhysicalHelix helix3) : fhelix1(helix1),fhelix2(helix2), fhelix3(helix3) {}
+    // Implementation of the function to be minimized
+    double operator() (const double *par) {
+    double x = par[0];
+    double y = par[1];
+    double z = par[2];
+    double s1 = par[3];
+    double s2 = par[4]; 
+    double s3 = par[5];   
+    double f = 0;
+    
+    TVector3 vertex(x, y, z);
+    TVector3 p1 = fhelix1.at(s1);
+    TVector3 p2 = fhelix2.at(s2);
+    TVector3 p3 = fhelix3.at(s3);
+
+    double d1 = (vertex - p1).Mag2();
+    double d2 = (vertex - p2).Mag2();
+    double d3 = (vertex - p3).Mag2();
+    f = d1 + d2 + d3; // minimize total squared distance
+    return f;	
+	}
+	};
 
 int main(int argc, char **argv)
 {
@@ -151,6 +235,23 @@ int main(int argc, char **argv)
  TH1F *hRecVtxX = new TH1F("hRecVtxX", "x position of Rec vertex;x (mm)", 500, -5.0, 5.0);
  TH1F *hRecVtxY = new TH1F("hRecVtxY", "y position of Rec vertex;y (mm)", 500, -5.0, 5.0);
  TH1F *hRecVtxZ = new TH1F("hRecVtxZ", "z position of Rec vertex;z (mm)", 800, -200, 200);
+
+ TH1F *hPullVtxX = new TH1F("hPullVtxX", "Pull x position of MC vertex;(Vx_{rec}-Vx_{mc})/#sigma_{vx}; Entries (a.u.)", 1000, -10., 10.);
+ TH1F *hPullVtxY = new TH1F("hPullVtxY", "Pull y position of MC vertex;(Vy_{rec}-Vy_{mc})/#sigma_{vy}; Entries (a.u.)", 1000, -10., 10.);
+ TH1F *hPullVtxZ = new TH1F("hPullVtxZ", "Pull z position of MC vertex;(Vz_{rec}-Vz_{mc})/#sigma_{vz}; Entries (a.u.)", 2000, -20, 20);
+ 
+  TH1F *hRes_SVx_Helixfit = new TH1F("hRes_SVx_Helixfit", "Fit method: Residual of SVx; SVx_{rec}-SVx_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
+  TH1F *hRes_SVy_Helixfit= new TH1F("hRes_SVy_Helixfit", "Fit method: Residual of SVy; SVy_{rec}-SVy_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
+  TH1F *hRes_SVz_Helixfit = new TH1F("hRes_SVz_Helixfit", "Fit method: Residual of SVz; SVz_{rec}-SVz_{mc} (mm); Entries (a.u.)", 1000, -5.0, 5.0);
+  
+  TH1F *hRes_SVx_Helixfit_pull = new TH1F("hRes_SVx_Helixfit_pull", "Fit method: Pull of SVx; SVx_{rec}-SVx_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
+  TH1F *hRes_SVy_Helixfit_pull = new TH1F("hRes_SVy_Helixfit_pull", "Fit method: Pull of SVy; SVy_{rec}-SVy_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
+  TH1F *hRes_SVz_Helixfit_pull = new TH1F("hRes_SVz_Helixfit_pull", "Fit method: Pull of SVz; SVz_{rec}-SVz_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
+ 
+ 
+ TH1F *hchi2_vtx = new TH1F("hchi2_vtx", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
+ TH1F *hchi2_vtx_sig = new TH1F("hchi2_vtx_sig", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
+ TH1F *hchi2_vtx_bkg = new TH1F("hchi2_vtx_bkg", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
 
  TH2F *hLcpDecayVxVy = new TH2F("hLcpDecayVxVy", "#Lambda_{c}^{+} decay vertex to primary vertex;#Deltav_{x} (mm);#Deltav_{y} (mm)", 400, -1-0.0025, 1-0.0025, 400, -1-0.0025, 1-0.0025);
  TH2F *hLcpDecayVrVz = new TH2F("hLcpDecayVrVz", "#Lambda_{c}^{+} decay vertex to primary vertex;#Deltav_{z} (mm);#Deltav_{r} (mm)", 100, -2, 2, 100, -0.2, 1.8);
@@ -275,6 +376,7 @@ rcTrkLoca2 = new TTreeReaderArray<float>{treereader, "CentralCKFTrackParameters.
 rcTrkLocb2 = new TTreeReaderArray<float>{treereader, "CentralCKFTrackParameters.loc.b"};
 rcTrkTheta2 = new TTreeReaderArray<float>{treereader, "CentralCKFTrackParameters.theta"};
 rcTrkPhi2 = new TTreeReaderArray<float>{treereader, "CentralCKFTrackParameters.phi"};
+rcTrkCov = new TTreeReaderArray<std::array<float, 21>>{treereader, "CentralCKFTrackParameters.covariance.covariance[21]"};
 
 TTreeReaderArray<float> CTVx = {treereader, "CentralTrackVertices.position.x"};
 TTreeReaderArray<float> CTVy = {treereader, "CentralTrackVertices.position.y"};
@@ -307,7 +409,7 @@ TTree *tree_sig = new TTree("treeMLSig", "treeMLSig");
 
   // Define variables to store in the Ntuple
 float d0_p_sig, d0_k_sig, d0_pi_sig, d0xy_p_sig, d0xy_k_sig, d0xy_pi_sig, sum_d0xy_sig, dca_12_sig, dca_Lcp_sig, decay_length_sig;
-float costheta_sig, costhetaxy_sig, pt_Lcp_sig, y_Lcp_sig, mass_Lcp_sig, sigma_vtx_sig, mult_sig;
+float costheta_sig, costhetaxy_sig, pt_Lcp_sig, y_Lcp_sig, mass_Lcp_sig, sigma_vtx_sig, mult_sig, chi2_sig;
 
     // Link the variables to the TTree branches
 tree_sig->Branch("d0_p", &d0_p_sig, "d0_p/F");
@@ -326,14 +428,15 @@ tree_sig->Branch("decay_length", &decay_length_sig, "decay_length/F");
 tree_sig->Branch("costheta", &costheta_sig, "costheta/F"); 
 tree_sig->Branch("costheta_xy", &costhetaxy_sig, "costheta_xy/F"); 
 tree_sig->Branch("sigma_vtx", &sigma_vtx_sig, "sigma_vtx/F"); 
-tree_sig->Branch("mult", &mult_sig, "mult/F");             
+tree_sig->Branch("mult", &mult_sig, "mult/F");
+tree_sig->Branch("chi2", &chi2_sig, "chi2/F");                          
 
 TFile *file_bkg = new TFile("BkgLcp.root", "RECREATE");
 TTree *tree_bkg = new TTree("treeMLBkg", "treeMLBkg"); 
 
   // Define variables to store in the Ntuple
 float d0_p_bkg, d0_k_bkg, d0_pi_bkg, d0xy_p_bkg, d0xy_k_bkg, d0xy_pi_bkg, sum_d0xy_bkg, dca_12_bkg, dca_Lcp_bkg, decay_length_bkg;
-float costheta_bkg, costhetaxy_bkg, pt_Lcp_bkg, y_Lcp_bkg, mass_Lcp_bkg, sigma_vtx_bkg, mult_bkg;
+float costheta_bkg, costhetaxy_bkg, pt_Lcp_bkg, y_Lcp_bkg, mass_Lcp_bkg, sigma_vtx_bkg, mult_bkg, chi2_bkg;
   // Link the variables to the TTree branches
 tree_bkg->Branch("d0_p", &d0_p_bkg, "d0_p/F");
 tree_bkg->Branch("d0_k", &d0_k_bkg, "d0_k/F");
@@ -351,7 +454,8 @@ tree_bkg->Branch("decay_length", &decay_length_bkg, "decay_length/F");
 tree_bkg->Branch("costheta", &costheta_bkg, "costheta/F");  
 tree_bkg->Branch("costheta_xy", &costhetaxy_bkg, "costheta_xy/F"); 
 tree_bkg->Branch("sigma_vtx", &sigma_vtx_bkg, "sigma_vtx/F"); 
-tree_bkg->Branch("mult", &mult_bkg, "mult/F");                    
+tree_bkg->Branch("mult", &mult_bkg, "mult/F");
+tree_bkg->Branch("chi2", &chi2_bkg, "chi2/F");                                        
 
 
 int nevents = 0;
@@ -381,25 +485,32 @@ while(treereader.Next())
 
       // get RC primary vertex
  TVector3 vertex_rc(-999., -999., -999.);
+ TVector3 err_vertex_rc(-999., -999., -999.);
+
  if(prim_vtx_index.GetSize()>0)
  {
    int rc_vtx_index = prim_vtx_index[0];
    vertex_rc.SetXYZ(CTVx[rc_vtx_index], CTVy[rc_vtx_index], CTVz[rc_vtx_index]);
- }
+   err_vertex_rc.SetXYZ(sqrt(CTVerr_xx[rc_vtx_index]), sqrt(CTVerr_yy[rc_vtx_index]), sqrt(CTVerr_zz[rc_vtx_index]));
 
+ }
  hRecVtxX->Fill(vertex_rc.x());
  hRecVtxY->Fill(vertex_rc.y());
  hRecVtxZ->Fill(vertex_rc.z());
 
+  hPullVtxX->Fill((vertex_rc.x()-vertex_mc.x())/err_vertex_rc.x()); 
+  hPullVtxY->Fill((vertex_rc.y()-vertex_mc.y())/err_vertex_rc.y()); 
+  hPullVtxZ->Fill((vertex_rc.z()-vertex_mc.z())/err_vertex_rc.z());
+
+
       // map MC and RC particles
- int nAssoc = assocChRecID.GetSize();
+      int nAssoc = assocChRecID.GetSize();
       map<int, int> assoc_map_mc_to_rc;  // MC --> RC Associations
       map<int, int> assoc_map_rc_to_mc;  // RC --> MC Associations
 
       for(unsigned int rc_index=0; rc_index<rcMomPx.GetSize(); rc_index++)
       {
-	  // loop over the association to find the matched MC particle
-	  // with largest weight
+	  // loop over the association to find the matched MC particle with largest weight
        double max_weight = 0;
        int matched_mc_index = -1;
        for(int j=0; j<nAssoc; j++)
@@ -504,8 +615,8 @@ for(int imc=0; imc<nMCPart; imc++)
  hEventStat->Fill(1.5);
 
   // printf("MC Particle (Momentum) = (%f, %f, %f) \n",mcMomPx[imc], mcMomPy[imc], mcMomPz[imc]);		  	
- int nDuaghters = mcPartDaughter_end[imc]-mcPartDaughter_begin[imc];
- if(nDuaghters!=3) continue;
+ int nDaughters = mcPartDaughter_end[imc]-mcPartDaughter_begin[imc];
+ if(nDaughters!=3) continue;
 
 	  // find Lc+ that decay into pKPi
  bool is_pkpi_decay = false;	  
@@ -565,7 +676,7 @@ for(int imc=0; imc<nMCPart; imc++)
    mc_index_Lcp_k.push_back(daug_index_2);
    mc_index_Lcp_pi.push_back(daug_index_1);
  }	    	    	    	    
-   else 
+ else 
    {
      mc_index_Lcp_p.push_back(daug_index_2);
      mc_index_Lcp_k.push_back(daug_index_3);
@@ -678,12 +789,33 @@ for(int imc=0; imc<nMCPart; imc++)
        }
 
        float dcaDaughters[3], cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx;
-       TLorentzVector parent = GetDCADaughters(p_index[i], k_index[j], pi_index[k], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx);
-
+       float chi2_ndf = 0.;
+       TVector3 decayVertex;
+       double err_Par[6];  // or whatever size is appropriate
+       TLorentzVector parent = GetDCADaughters(p_index[i], k_index[j], pi_index[k], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx, chi2_ndf, decayVertex,err_Par);
+		   hchi2_vtx->Fill(chi2_ndf);
 
        if(is_Lcp_pkpi)
        {
         hEventStat->Fill(3.5);
+        hchi2_vtx_sig->Fill(chi2_ndf);
+		   TVector3 MCVertex_Kaon(mcPartVx[mc_index_k], mcPartVy[mc_index_k], mcPartVz[mc_index_k]);
+		   TVector3 MCVertex_Pion(mcPartVx[mc_index_pi], mcPartVy[mc_index_pi], mcPartVz[mc_index_pi]);
+		   
+		 //  printf("Signal MC Vertex Kaon = (%f, %f, %f)\n",MCVertex_Kaon.X(), MCVertex_Kaon.Y(), MCVertex_Kaon.Z());	 	
+		  // printf("Signal MC Vertex Pion = (%f, %f, %f)\n",MCVertex_Pion.X(), MCVertex_Pion.Y(), MCVertex_Pion.Z());
+		   
+		  // cout<<"Signal MC Vertex Kaon (cm): "<<MCVertex_Kaon.X()*0.1<<"\t"<<MCVertex_Kaon.Y()*0.1<<"\t"<<MCVertex_Kaon.Z()*0.1<<endl;
+		  // cout<<"Signal MC Vertex Pion (cm): "<<MCVertex_Pion.X()*0.1<<"\t"<<MCVertex_Pion.Y()*0.1<<"\t"<<MCVertex_Pion.Z()*0.1<<endl; 
+		   
+		   	 hRes_SVx_Helixfit->Fill((decayVertex.X()-MCVertex_Kaon.X()*0.1)*10);
+		      hRes_SVy_Helixfit->Fill((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
+		      hRes_SVz_Helixfit->Fill((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);	
+		      
+		      hRes_SVx_Helixfit_pull->Fill(((decayVertex.X()-MCVertex_Kaon.X()*0.1)*10)/sqrt(err_Par[0]));
+		      hRes_SVy_Helixfit_pull->Fill(((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10)/sqrt(err_Par[1]));
+		      hRes_SVz_Helixfit_pull->Fill(((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10)/sqrt(err_Par[2]));
+        		      
         if (q_proton == 1 && q_kaon == -1 && q_pion == 1)
         hEventStat->Fill(4.5);   // Λc⁺
       else if (q_proton == -1 && q_kaon == 1 && q_pion == -1)
@@ -695,9 +827,10 @@ for(int imc=0; imc<nMCPart; imc++)
       h3PairCosTheta[0]->Fill(parent.Pt(), parent.Rapidity(), cosTheta);
       h3PairDca[0]->Fill(parent.Pt(), parent.Rapidity(), V0DcaToVtx);
       h3PairDecayLength[0]->Fill(parent.Pt(), parent.Rapidity(), decayLength);
+		      //printf("Signal: dca12 = %2.4f, cosTheta = %2.4f, D0dca = %2.4f, decay = %2.4f\n", dcaDaughters, cosTheta, V0DcaToVtx, decayLength);
       h3InvMass[0][0]->Fill(parent.Pt(), parent.Rapidity(), parent.M());
 
-      // Toplogical Variables for Signal
+                // Toplogical Variables for Signal
       d0_p_sig = dcaToVtx_p.Mag();
       d0_k_sig = dcaToVtx_k.Mag();
       d0_pi_sig = dcaToVtx_pi.Mag();		      
@@ -715,21 +848,25 @@ for(int imc=0; imc<nMCPart; imc++)
       mass_Lcp_sig = parent.M();
       sigma_vtx_sig = sigma_vtx;
       mult_sig = nMcPart;
+      chi2_sig = chi2_ndf;
       tree_sig->Fill();  
 
     }
     else
     {
       hEventStat->Fill(6.5);
+      hchi2_vtx_bkg->Fill(chi2_ndf);		      
       h3PairDca12[1]->Fill(parent.Pt(), parent.Rapidity(), dcaDaughters[0]);
       h3PairDca23[1]->Fill(parent.Pt(), parent.Rapidity(), dcaDaughters[1]); 
       h3PairDca13[1]->Fill(parent.Pt(), parent.Rapidity(), dcaDaughters[2]);			      
       h3PairCosTheta[1]->Fill(parent.Pt(), parent.Rapidity(), cosTheta);
       h3PairDca[1]->Fill(parent.Pt(), parent.Rapidity(), V0DcaToVtx);
       h3PairDecayLength[1]->Fill(parent.Pt(), parent.Rapidity(), decayLength);
+
+		      //printf("Bkg: dca12 = %2.4f, cosTheta = %2.4f, D0dca = %2.4f, decay = %2.4f\n", dcaDaughters, cosTheta, V0DcaToVtx, decayLength);
       h3InvMass[1][0]->Fill(parent.Pt(), parent.Rapidity(), parent.M());
 
-	  // Toplogical Variables for Bkg
+		      // Toplogical Variables for Bkg
       d0_p_bkg = dcaToVtx_p.Mag();
       d0_k_bkg = dcaToVtx_k.Mag();
       d0_pi_bkg = dcaToVtx_pi.Mag();		      
@@ -747,6 +884,7 @@ for(int imc=0; imc<nMCPart; imc++)
       mass_Lcp_bkg = parent.M();
       sigma_vtx_bkg = sigma_vtx;
       mult_bkg = nMcPart;
+      chi2_bkg = chi2_ndf;
       tree_bkg->Fill();
     } 
 
@@ -781,10 +919,20 @@ hMcVtxZ->Write();
 hRecVtxX->Write();
 hRecVtxY->Write();
 hRecVtxZ->Write();
-
+hPullVtxX->Write();
+hPullVtxY->Write();
+hPullVtxZ->Write();
+hchi2_vtx->Write();
+hchi2_vtx_sig->Write();		      
+hchi2_vtx_bkg->Write();
 hLcpDecayVxVy->Write();
 hLcpDecayVrVz->Write();
-
+hRes_SVx_Helixfit->Write();
+hRes_SVy_Helixfit->Write();
+hRes_SVz_Helixfit->Write();
+hRes_SVx_Helixfit_pull->Write();
+hRes_SVy_Helixfit_pull->Write(); 
+hRes_SVz_Helixfit_pull->Write(); 
 hMCLcpPtRap->Write();
 hMcPPtEta->Write();
 hMcPPtEtaReco->Write();
@@ -859,7 +1007,7 @@ TVector3 GetDCAToPrimaryVertex(const int index, TVector3 vtx)
 // Local to global conversion 
 // x = - l0 Sin (phi), y = l0 Cos (phi), z = l1 
 TLorentzVector GetDCADaughters(const int index1, const int index2, const int index3, TVector3 vtx,
-  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx)
+  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, double *parFitErr)
 {
   // -- get helix
   TVector3 pos1(rcTrkLoca2->At(index1) * sin(rcTrkPhi2->At(index1)) * -1 * millimeter, rcTrkLoca2->At(index1) * cos(rcTrkPhi2->At(index1)) * millimeter, rcTrkLocb2->At(index1) * millimeter);
@@ -880,61 +1028,27 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
 
   TVector3 vtx_tmp;
   vtx_tmp.SetXYZ(vtx.x()*millimeter, vtx.y()*millimeter, vtx.z()*millimeter);
-
-  // -- Full calculation for pathlengths
-  // Point1
-  pair<double, double> const ss_12 = p1Helix.pathLengths(p2Helix); 
-  pair<double, double> const ss_13 = p1Helix.pathLengths(p3Helix);
-  // Point2 
-  pair<double, double> const ss_23 = p2Helix.pathLengths(p3Helix); 
-  pair<double, double> const ss_21 = p2Helix.pathLengths(p1Helix); 
-  // Point3
-  pair<double, double> const ss_31 = p3Helix.pathLengths(p1Helix); 
-  pair<double, double> const ss_32 = p3Helix.pathLengths(p2Helix);  
   
-  // Point1 w.r.t. helices 2 and 3, later average will be taken 
-  TVector3 const P1P2 = p1Helix.at(ss_12.first); TVector3 const P1P3 = p1Helix.at(ss_13.first); 
-  // Point2 w.r.t. helices 1 and 3, later average will be taken 
-  TVector3 const P2P1 = p2Helix.at(ss_21.first); TVector3 const P2P3 = p2Helix.at(ss_23.first); 
-  // Point3 w.r.t. helices 1 and 2, later average will be taken 
-  TVector3 const P3P1 = p3Helix.at(ss_31.first); TVector3 const P3P2 = p3Helix.at(ss_32.first); 
-
- // printf("P1P2 = (%2.4f, %2.4f, %2.4f) \t P1P3 = (%2.4f, %2.4f, %2.4f)\n", P1P2.x(), P1P2.y(), P1P2.z(), P1P3.x(), P1P3.y(), P1P3.z());
- // printf("P2P1 = (%2.4f, %2.4f, %2.4f) \t P2P3 = (%2.4f, %2.4f, %2.4f)\n", P2P1.x(), P2P1.y(), P2P1.z(), P2P3.x(), P2P3.y(), P2P3.z());
- // printf("P3P1 = (%2.4f, %2.4f, %2.4f) \t P3P2 = (%2.4f, %2.4f, %2.4f)\n", P3P1.x(), P3P1.y(), P3P1.z(), P3P2.x(), P3P2.y(), P3P2.z());
-  // Evaluate the DCA Points
-  // Between track1 and track2
-  TVector3 const p1 = 0.5*(P1P2+P1P3);
-  TVector3 const p2 = 0.5*(P2P1+P2P3);
-  TVector3 const p3 = 0.5*(P3P1+P3P2);
-
-
-  // cout << ss.first << "  " << ss.second << endl;
-  // printf("p1AtDcaToP2 origin = (%2.4f, %2.4f, %2.4f)\n", p1AtDcaToP2.x(), p1AtDcaToP2.y(), p1AtDcaToP2.z());
-  // printf("p2AtDcaToP1 origin = (%2.4f, %2.4f, %2.4f)\n", p2AtDcaToP1.x(), p2AtDcaToP1.y(), p2AtDcaToP1.z());
+  // Decay vertex with distance minimization
+  double s1, s2, s3;
   
-  // -- calculate DCA between daughters 
-  // Three dcaDaughters; dcaDaughters_12, dcaDaughters_23, dcaDaughters_13
+  getDecayVertex_chi2fit(index1,index2,index3,s1,s2,s3,decayVertex,chi2_ndf, parFitErr);
+  
+  // Points of closest approach among three helices
+  TVector3 const p1 = p1Helix.at(s1);
+  TVector3 const p2 = p2Helix.at(s2);
+  TVector3 const p3 = p3Helix.at(s3);
+
+  printf("Chi2/ndf = %f \n",chi2_ndf);
+ // Three dcaDaughters; dcaDaughters_12, dcaDaughters_23, dcaDaughters_13
   dcaDaughters[0] = (p1 - p2).Mag()/millimeter;
   dcaDaughters[1] = (p2 - p3).Mag()/millimeter;
   dcaDaughters[2] = (p3 - p1).Mag()/millimeter; 
 
   // -- calculate Momentum of each daughters at the DCA point
-  TVector3 const p1MomAtDcap2 = p1Helix.momentumAt(ss_12.first,  bField * tesla);
-  TVector3 const p1MomAtDcap3 = p1Helix.momentumAt(ss_13.first,  bField * tesla);
-  TVector3 const p2MomAtDca3 = p2Helix.momentumAt(ss_23.first, bField * tesla);
-  TVector3 const p2MomAtDca1 = p2Helix.momentumAt(ss_21.first, bField * tesla);
-  TVector3 const p3MomAtDcap1 = p3Helix.momentumAt(ss_31.first, bField * tesla); 
-  TVector3 const p3MomAtDcap2 = p3Helix.momentumAt(ss_32.first, bField * tesla); 
-
-  // printf("p1MomAtDcap2 = (%2.4f, %2.4f, %2.4f) \t p1MomAtDcap3 = (%2.4f, %2.4f, %2.4f)\n", p1MomAtDcap2.x(), p1MomAtDcap2.y(), p1MomAtDcap2.z(), p1MomAtDcap3.x(), p1MomAtDcap3.y(), p1MomAtDcap3.z());
-  // printf("p2MomAtDca3 = (%2.4f, %2.4f, %2.4f) \t p2MomAtDca1 = (%2.4f, %2.4f, %2.4f)\n", p2MomAtDca3.x(), p2MomAtDca3.y(), p2MomAtDca3.z(), p2MomAtDca1.x(), p2MomAtDca1.y(), p2MomAtDca1.z());
-  // printf("p3MomAtDcap1 = (%2.4f, %2.4f, %2.4f) \t p3MomAtDcap2 = (%2.4f, %2.4f, %2.4f)\n", p3MomAtDcap1.x(), p3MomAtDcap1.y(), p3MomAtDcap1.z(), p3MomAtDcap2.x(), p3MomAtDcap2.y(), p3MomAtDcap2.z());
-
-  
-  TVector3 const p1MomAtDca = 0.5*(p1MomAtDcap2+p1MomAtDcap3);  
-  TVector3 const p2MomAtDca = 0.5*(p2MomAtDca3+p2MomAtDca1); 
-  TVector3 const p3MomAtDca = 0.5*(p3MomAtDcap1+p3MomAtDcap2); 
+  TVector3 const p1MomAtDca = p1Helix.momentumAt(s1,  bField * tesla);  
+  TVector3 const p2MomAtDca = p2Helix.momentumAt(s2,  bField * tesla); 
+  TVector3 const p3MomAtDca = p3Helix.momentumAt(s3,  bField * tesla);
   
   TLorentzVector p1FourMom(p1MomAtDca, sqrt(p1MomAtDca.Mag2()+gProtonMass*gProtonMass));
   TLorentzVector p2FourMom(p2MomAtDca, sqrt(p2MomAtDca.Mag2()+gKaonMass*gKaonMass));
@@ -942,41 +1056,7 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
   
   TLorentzVector parent = p1FourMom + p2FourMom + p3FourMom;
 
-  // -- calculate cosThetaStar
-  // TLorentzVector pairFourMomReverse(-parent.Px(), -parent.Py(), -parent.Pz(), parent.E());
-  // TLorentzVector p1FourMomStar = p1FourMom;
-  // p1FourMomStar.Boost(pairFourMomReverse.Vect());
-  // float cosThetaStar = std::cos(p1FourMomStar.Vect().Angle(parent.Vect()));
-
-  //Approach1: Assign the decay vertex the centroid coordinate of the triangle
-   TVector3 decayVertex = 1./3*(p1 + p2+ p3);
- 
-  //Approach2: Assign the decay vertex as the circumcenter of the triangle (p1, p2, p3)
-  // Compute side vectors of triangle; a = p1, b = p2, c = p3
-    // Side vectors
-  TVector3 ab = p2 - p1; 
-  TVector3 ac = p3 - p1;
-
-    // Cross product of ab and ac
-  TVector3 abXac = ab.Cross(ac);
-
-  double ab2 = ab.Mag2();
-  double ac2 = ac.Mag2();
-  double abXac2 = abXac.Mag2();
-
-    // Vector from point a to the circhumspere center
-  TVector3 a_to_CircumsphereCenter = (abXac.Cross(ab) * ac2 + ac.Cross(abXac) * ab2) * (1.0 / (2.0 * abXac2));
-
-    // Magnitude of the above vector is radius
-  double radius = a_to_CircumsphereCenter.Mag();
-
-    // Coordinate of the Circumsphere center is the decayvertex in 3D (A point at equal distance of three PCA)
- 
-  //TVector3 decayVertex = p1 + a_to_CircumsphereCenter; // uncomment it if you want to define as circumsphere center
-
-  // printf("dist_p1_to_decayvertex = (%1.4f) \t dist_p2_to_decayvertex = (%1.4f) \t dist_p3_to_decayvertex = (%1.4f) \n", (p1-decayVertex).Mag(), (p2-decayVertex).Mag(), (p3-decayVertex).Mag());
-
-    // Confirm by evaluating the distance with vertices
+  // Confirm by evaluating the distance with vertices
 
   sigma_vtx = sqrt((p1-decayVertex).Mag2()+(p2-decayVertex).Mag2()+(p3-decayVertex).Mag2())/millimeter;
 
@@ -999,5 +1079,110 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
   //V0DcaToVtx = dcaToVtx.Mag();
 
   return parent;
+}
+
+void getDecayVertex_chi2fit(const int index1, const int index2, const int index3,  double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr)
+{
+    TVector3 pos1(rcTrkLoca2->At(index1) * sin(rcTrkPhi2->At(index1)) * -1 * millimeter,
+                  rcTrkLoca2->At(index1) * cos(rcTrkPhi2->At(index1)) * millimeter,
+                  rcTrkLocb2->At(index1) * millimeter);
+
+    TVector3 mom1(rcMomPx2->At(index1), rcMomPy2->At(index1), rcMomPz2->At(index1));
+
+    TVector3 pos2(rcTrkLoca2->At(index2) * sin(rcTrkPhi2->At(index2)) * -1 * millimeter,
+                  rcTrkLoca2->At(index2) * cos(rcTrkPhi2->At(index2)) * millimeter,
+                  rcTrkLocb2->At(index2) * millimeter);
+
+    TVector3 mom2(rcMomPx2->At(index2), rcMomPy2->At(index2), rcMomPz2->At(index2));
+    
+    TVector3 pos3(rcTrkLoca2->At(index3) * sin(rcTrkPhi2->At(index3)) * -1 * millimeter,
+                  rcTrkLoca2->At(index3) * cos(rcTrkPhi2->At(index3)) * millimeter,
+                  rcTrkLocb2->At(index3) * millimeter);
+
+    TVector3 mom3(rcMomPx2->At(index3), rcMomPy2->At(index3), rcMomPz2->At(index3));
+
+
+    float charge1 = rcCharge2->At(index1);
+    float charge2 = rcCharge2->At(index2);
+    float charge3 = rcCharge2->At(index3);
+
+
+    StPhysicalHelix helix1(mom1, pos1, bField * tesla, charge1);
+    StPhysicalHelix helix2(mom2, pos2, bField * tesla, charge2);
+    StPhysicalHelix helix3(mom3, pos3, bField * tesla, charge3); 
+    
+    pair<double, double> const ss12 = helix1.pathLengths(helix2);
+    pair<double, double> const ss13 = helix1.pathLengths(helix3);
+    TVector3 const p1_init = helix1.at(ss12.first);
+    TVector3 const p2_init = helix2.at(ss12.second); 
+    TVector3 const p3_init = helix3.at(ss13.second);
+    TVector3 const centroid = 1./3*(p1_init+p2_init+p3_init); 
+    
+    std::array<float, 21>& fcov1 = rcTrkCov->At(index1);
+    std::array<float, 21>& fcov2 = rcTrkCov->At(index2); 
+    std::array<float, 21>& fcov3 = rcTrkCov->At(index3);  
+
+      // Perform Minimization
+    const Int_t nPar = 6;
+    Chi2Minimization d2Function(helix1,helix2,helix3,fcov1,fcov2,fcov3);
+    ROOT::Math::Functor fcn(d2Function,nPar); // 5 parameters
+    ROOT::Fit::Fitter fitter;
+
+    double pStart[nPar] = {centroid.X(),centroid.Y(),centroid.Z(),ss12.first,ss12.second,ss13.second};
+    fitter.SetFCN(fcn, pStart,nPar,1);
+    fitter.Config().ParSettings(0).SetName("x0");
+    fitter.Config().ParSettings(0).SetStepSize(0.01);
+   // fitter.Config().ParSettings(0).SetLimits(-1., 1.);    
+    // No limits for x, y, z
+
+    fitter.Config().ParSettings(1).SetName("y0");
+    fitter.Config().ParSettings(1).SetStepSize(0.01);
+   // fitter.Config().ParSettings(1).SetLimits(-1., 1.);
+
+    fitter.Config().ParSettings(2).SetName("z0");
+    fitter.Config().ParSettings(2).SetStepSize(0.01);
+   // fitter.Config().ParSettings(2).SetLimits(-10., 10.);    
+
+    fitter.Config().ParSettings(3).SetName("s1");
+    fitter.Config().ParSettings(3).SetValue(0.0);
+    fitter.Config().ParSettings(3).SetStepSize(0.01);
+   // fitter.Config().ParSettings(3).SetLimits(-1., 1.);
+
+    fitter.Config().ParSettings(4).SetName("s2");
+    fitter.Config().ParSettings(4).SetValue(0.0);
+    fitter.Config().ParSettings(4).SetStepSize(0.01);
+   // fitter.Config().ParSettings(4).SetLimits(-1., 1.);  
+
+    fitter.Config().ParSettings(5).SetName("s3");
+    fitter.Config().ParSettings(5).SetValue(0.0);
+    fitter.Config().ParSettings(5).SetStepSize(0.01);
+   // fitter.Config().ParSettings(5).SetLimits(-1., 1.);          
+    
+    fitter.Config().MinimizerOptions().SetMaxIterations(10000);	
+    // do the fit 
+
+    Bool_t ok = fitter.FitFCN();
+    if (!ok) Error("Fitting","Fitting failed");
+    const ROOT::Fit::FitResult & result = fitter.Result();
+    //chi2 = fitter.Result().Chi2()/3.0;
+    chi2 = fitter.Result().MinFcnValue()/3.0;  // Minimum value of your function
+    int status = fitter.Result().Status();
+    if (status>0 ) {printf("Fit Failed!!!!\n");}
+   // if (status>0 || chi2_ndf>10. ) return;
+   // cout <<"\033[1;31m Fit Result Chi2:\033[0m"<<chi2<<endl;
+    //result.Print(std::cout);
+   
+   // Get the covariance matrix
+ //  TMatrixDSym covMatrix(5);
+  // result.GetCovarianceMatrix(covMatrix); // Matrix for the parameter errors
+  // covMatrix.Print();
+   
+   const double * parFit = result.GetParams();
+   const double *FitErr = result.GetErrors();
+   for (int i = 0; i < nPar; ++i) parFitErr[i] = FitErr[i];
+
+    vertex.SetXYZ(parFit[0], parFit[1], parFit[2]);
+
+
 }
 
