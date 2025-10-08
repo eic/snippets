@@ -133,12 +133,10 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
   };
 
   // set up new jet reconstruction algorithm
-/* FIXME figure out correct templating for jet reco
-  eicrecon::JetReconstruction<edm4eic::ReconstructedParticleCollection> algoJetReco("ReconstructedChargedEEKtJets");
+  eicrecon::JetReconstruction<edm4eic::ReconstructedParticle> algoJetReco("ReconstructedChargedEEKtJets");
   algoJetReco.level(algorithms::LogLevel::kInfo);
   algoJetReco.applyConfig(cfgJetReco);
   algoJetReco.init();
-*/
 
   // set up new DIS/kinematic algorithms here
   eicrecon::ElectronReconstruction algoElecReco("LooselyReconstructedElectronsForDIS");
@@ -193,6 +191,7 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
 
     // create output collections
     auto oHeaders      = std::make_unique<edm4hep::EventHeaderCollection>();
+    auto oJets         = std::make_unique<edm4eic::ReconstructedParticleCollection>();
     auto oElectrons    = std::make_unique<edm4eic::ReconstructedParticleCollection>();
     auto oDISElectrons = std::make_unique<edm4eic::ReconstructedParticleCollection>();
 
@@ -202,21 +201,36 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
     header.setRunNumber(0);
     header.setWeight(1.0);
 
-    /* TODO rerun jet reconstruction here */
+    // rerun jet reconstruction
+    auto inJetReco  = std::make_tuple(&recoChrgs);
+    auto outJetReco = std::make_tuple(oJets.get());
+    algoJetReco.process(inJetReco, outJetReco);
 
-    // rerun electron reconstruction 
+    // rerun electron reconstruction
+    //   -- NOTE this algorithm returns a subset
+    //      collection!
+    //   -- So output indicates indices in input
+    //      collection corresponding to identified
+    //      electrons!
     auto inElecReco  = std::make_tuple(&recoPars);
     auto outElecReco = std::make_tuple(oElectrons.get());
     algoElecReco.process(inElecReco, outElecReco);
 
-
     /* TODO rerun DIS electron selection & kinematic calculation here */
+
+    // fill histograms from modified collections
+    for (const auto& jet : *oJets) {
+      hRerunExH -> Fill(
+        edm4hep::utils::eta( jet.getMomentum() ),
+        jet.getEnergy()
+      );
+    }
 
     // collect output collections into a frame
     // and write to TTree
     auto oFrame = podio::Frame();
     oFrame.put(std::move(oHeaders), "EventHeader");
-    oFrame.put(std::move(oElectrons), "LooselyReconstructedElectronsForDIS");
+    oFrame.put(std::move(oJets), "ReconstructedChargedEEKtJets");
     writer.writeFrame(oFrame, "events");
 
   }  // end event loop

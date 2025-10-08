@@ -15,8 +15,6 @@ Reads in EICrecon output (`*.podio.root`, `*.tree.edm4eic.root`,
 ## To-Do:
 
 There are still a couple to-do items in the example:
-  - [ ] Figure out the correct ctor for the jet reconstruction,
-        and run it in the event loop.
   - [ ] After fixes in EICrecon, the modified DIS electron
         selection and kinemaitc calculation algorithms
         need to be added/run
