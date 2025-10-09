@@ -3,16 +3,19 @@
 * contact: Shujie Li, shujieli@lbl.gov
 
 ## run_merger.sh: 
-example script to generate small sample of background mixed hepmc file locally
+This is an example script to generate small sample of background mixed hepmc file locally.
 
-you should always use background files from the simulation campaign data (https://eic.github.io/epic-prod/) when possible 
+Pleae always use background files from the simulation campaign data (https://eic.github.io/epic-prod/) when possible 
 
 ### pre-requists:
    1.  install SignalBackgroundMerger from https://github.com/eic/HEPMC_Merger
    2.  recommend to run within eic-shell to use the xrdfs command
 
  run as: ./run_merger.sh, then follow the options.
- 
+
+* Mixing frequencies can be found on [ePIC background Wiki](https://wiki.bnl.gov/EPIC/index.php?title=Background)
+* Explanations on [mixing scheme](https://github.com/eic/eic.github.io/blob/master/_resources/background_mixed_samples.md)
+
 * For SR and electron beam gas, please also read README files under JLab ifarm (contact: Andrii Natochii):
     SynRad: /volatile/eic/andrii/SynradG4_HepMC_Files_SR_on_IP6
     ESR beam losses: /volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC
