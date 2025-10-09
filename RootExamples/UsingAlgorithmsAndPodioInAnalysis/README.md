@@ -2,24 +2,15 @@
 
 A short(ish) ROOT macro illustrating two points:
 
-  - How to use PODIO collections in a standalone ROOT macro,
-    especially illustrating how to create new collections and
-    save them to an output tree using the `podio::ROOTWriter`
-  - How to modify and use EICrecon algorithms in a 
-    standalone ROOT Macro.
+  a. How to use PODIO collections in a standalone ROOT macro,
+     especially illustrating how to create new collections and
+     save them to an output tree using the `podio::ROOTWriter`
+  b. How to modify and use EICrecon algorithms in a 
+     standalone ROOT Macro.
 
 Reads in EICrecon output (`*.podio.root`, `*.tree.edm4eic.root`,
- etc.).
-
-
-## To-Do:
-
-There are still a couple to-do items in the example:
-  - [ ] After fixes in EICrecon, the modified DIS electron
-        selection and kinemaitc calculation algorithms
-        need to be added/run
-  - [ ] And finally, fill the histograms for modified
-        algorithms.
+ etc.). Code is **NOT** optimized in any way, so don't expect 
+great performance!
 
 
 ## Dependencies

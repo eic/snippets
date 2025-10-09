@@ -6,7 +6,9 @@
 //! \brief
 //!   Example ROOT macro illustrating how to run an
 //!   EICrecon algorithm outside of EICrecon, and how to
-//!   write out your own PODIO collections.
+//!   write out your own PODIO collections. The code is
+//!   completely unoptimized! So don't expect great
+//!   performance...
 //!
 //! \usage
 //!   Has to be run inside eic-shell! run the `setup.sh`
@@ -21,19 +23,17 @@
 #define RunAlgorithmsOutsideOfReco_cxx
 
 #include <algorithms/logger.h>
+#include <algorithms/service.h>
 #include <edm4hep/EventHeaderCollection.h>
 #include <edm4hep/MCParticleCollection.h>
 #include <edm4hep/utils/vector_utils.h>
 #include <edm4eic/InclusiveKinematicsCollection.h>
 #include <edm4eic/ReconstructedParticleCollection.h>
-#include <EICrecon/algorithms/interfaces/WithPodConfig.h>
 #include <EICrecon/algorithms/reco/ElectronReconstruction.h>
-#include <EICrecon/algorithms/reco/ElectronReconstructionConfig.h>
 #include <EICrecon/algorithms/reco/InclusiveKinematicsElectron.h>
 #include <EICrecon/algorithms/reco/JetReconstruction.h>
-#include <EICrecon/algorithms/reco/JetReconstructionConfig.h>
 #include <EICrecon/algorithms/reco/ScatteredElectronsEMinusPz.h>
-#include <EICrecon/algorithms/reco/ScatteredElectronsEMinusPzConfig.h>
+#include <EICrecon/services/particle/ParticleSvc.h>
 #include <podio/CollectionBase.h>
 #include <podio/Frame.h>
 #include <podio/ROOTReader.h>
@@ -115,6 +115,14 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
   TH2D* hRerunExH = new TH2D("hRerunExH", "EICrecon jet E vs. #eta (ee-k_{T})", bins[2].num, bins[2].start, bins[2].stop, bins[1].num, bins[1].start, bins[1].stop);
   std::cout << "    Defined histograms." << std::endl;
 
+  // initialize necessary services for algorithms -----------------------------
+
+  // the particle service is needed for
+  //   - ScatteredElectronsEMinusPz
+  //   - InclusiveKinematicsElectron
+  auto& svcParticle = algorithms::ParticleSvc::instance();
+  svcParticle.init();
+
   // initialize algorithms to rerun -------------------------------------------
 
   // modify configurations for algorithms we want to rerun
@@ -138,13 +146,20 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
   algoJetReco.applyConfig(cfgJetReco);
   algoJetReco.init();
 
-  // set up new DIS/kinematic algorithms here
+  // set up new DIS/kinematic algorithms
   eicrecon::ElectronReconstruction algoElecReco("LooselyReconstructedElectronsForDIS");
   algoElecReco.level(algorithms::LogLevel::kInfo);
   algoElecReco.applyConfig(cfgElecReco);
   algoElecReco.init();
 
-  /* TODO set up new DIS electron selection & kinematic calculation here */
+  eicrecon::ScatteredElectronsEMinusPz algoDISElecSelect("TightlyScatteredElectronsEMinusPz");
+  algoDISElecSelect.level(algorithms::LogLevel::kInfo);
+  algoDISElecSelect.applyConfig(cfgDISElecSelect);
+  algoDISElecSelect.init();
+
+  eicrecon::InclusiveKinematicsElectron algoKinemElec("ReconstructedInclusiveKinematicsElectron");
+  algoKinemElec.level(algorithms::LogLevel::kInfo);
+  algoKinemElec.init();
 
   // event loop ---------------------------------------------------------------
 
@@ -171,8 +186,6 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
     auto& recoPars     = iFrame.get<edm4eic::ReconstructedParticleCollection>("ReconstructedParticles");
     auto& recoChrgs    = iFrame.get<edm4eic::ReconstructedParticleCollection>("ReconstructedChargedParticles");
     auto& recoChrgJets = iFrame.get<edm4eic::ReconstructedParticleCollection>("ReconstructedChargedJets");
-    auto& recoElecs    = iFrame.get<edm4eic::ReconstructedParticleCollection>("ReconstructedElectronsForDIS");  // maybe not...
-    auto& disElecs     = iFrame.get<edm4eic::ReconstructedParticleCollection>("ScatteredElectronsEMinusPz");  // maybe not...
     auto& kineElecs    = iFrame.get<edm4eic::InclusiveKinematicsCollection>("InclusiveKinematicsElectron");
     auto& hadronFS     = iFrame.get<edm4eic::HadronicFinalStateCollection>("HadronicFinalState");
 
@@ -194,6 +207,7 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
     auto oJets         = std::make_unique<edm4eic::ReconstructedParticleCollection>();
     auto oElectrons    = std::make_unique<edm4eic::ReconstructedParticleCollection>();
     auto oDISElectrons = std::make_unique<edm4eic::ReconstructedParticleCollection>();
+    auto oKineElecs    = std::make_unique<edm4eic::InclusiveKinematicsCollection>();
 
     // set header info
     auto header = oHeaders -> create();
@@ -216,9 +230,20 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
     auto outElecReco = std::make_tuple(oElectrons.get());
     algoElecReco.process(inElecReco, outElecReco);
 
-    /* TODO rerun DIS electron selection & kinematic calculation here */
+    // select new DIS electron candidates
+    //   -- this also returns a subset collection
+    auto inDISSelect  = std::make_tuple(&recoPars, oElectrons.get());
+    auto outDISSelect = std::make_tuple(oDISElectrons.get());
+    algoDISElecSelect.process(inDISSelect, outDISSelect);
+
+    auto inKinemElec  = std::make_tuple(&mcPars, oDISElectrons.get(), &hadronFS);
+    auto outKinemElec = std::make_tuple(oKineElecs.get());
+    algoKinemElec.process(inKinemElec, outKinemElec);
 
     // fill histograms from modified collections
+    for (const auto& kine : *oKineElecs) {
+      hRerunQ2 -> Fill( kine.getQ2() );
+    }
     for (const auto& jet : *oJets) {
       hRerunExH -> Fill(
         edm4hep::utils::eta( jet.getMomentum() ),
@@ -230,7 +255,10 @@ void RunAlgorithmsOutsideOfReco(const Options& opt = DefaultOptions) {
     // and write to TTree
     auto oFrame = podio::Frame();
     oFrame.put(std::move(oHeaders), "EventHeader");
+    oFrame.put(std::move(oElectrons), "LooselyReconstructedElectrons");
+    oFrame.put(std::move(oDISElectrons), "TightlyScatteredElectronsEMinusPz");
     oFrame.put(std::move(oJets), "ReconstructedChargedEEKtJets");
+    oFrame.put(std::move(oKineElecs), "ReconstructedInclusiveKinematicsElectron");
     writer.writeFrame(oFrame, "events");
 
   }  // end event loop
