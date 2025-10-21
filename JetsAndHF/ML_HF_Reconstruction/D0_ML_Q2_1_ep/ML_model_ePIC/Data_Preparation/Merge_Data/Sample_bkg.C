@@ -23,7 +23,6 @@ TFile *fout = new TFile(Form("merged_bkg_y_D0_%1.1f_%1.1f_pt_D0_%1.1f_%1.1f.root
 TCanvas *c1 = new TCanvas("c1","c1",0,52,1400,1000);
 c1->SetGrid();
 c1->SetMargin(0.10, 0.03 ,0.12,0.07);
-TString std_cuts ="(mass_D0 > 1.6 && mass_D0 < 2.5) && d0xy_pi>0.02 && d0xy_k>0.02 && dca_12 < 0.07 && costheta > 0.95 && decay_length > 0.05 && dca_D0 < 0.1";
 // Reading Event histgram for DIS sample		
 TFile *file_DISsample = TFile::Open("../../../DIS_Sample/test.root");
 TH1D *hEvents_DISsample = (TH1D*)file_DISsample->Get("hEventStat");
@@ -35,12 +34,8 @@ Int_t nTotalPar = 3;
 // Background from DIS sample after preselection
 TFile *f_bkg_DISsample = TFile::Open("../Filtered_DISSample/BkgD0.root");	
 TTree *t_bkg_DISsample = (TTree*)f_bkg_DISsample->Get("treeMLBkg");
-if(ymax > 0.5){
 t_bkg_DISsample->Draw("mass_D0>>h_Bkg_DISSample(200,1.6,2.5)",Form("(y_D0>%f && y_D0<%f) && (pt_D0>%f && pt_D0<%f)",ymin,ymax,ptmin,ptmax),"goff");
-}
-else{
-t_bkg_DISsample->Draw("mass_D0>>h_Bkg_DISSample(200,1.6,2.5)",Form("(y_D0>%f && y_D0<%f) && (pt_D0>%f && pt_D0<%f) && %s",ymin,ymax,ptmin,ptmax,std_cuts.Data()),"goff");
-}
+
 TF1 *fitFunc = new TF1("fitFunc", pol2Fit, min_mass, max_mass, nTotalPar);
 fitFunc->SetParNames("p0", "p1", "p2");
 
