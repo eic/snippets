@@ -25,7 +25,7 @@ seed=42
 #        <0: (depracated) background with the default minbias (Q2<1 SIDIS) events as signal. 
 # Mixing frequencies can be found on ePIC Wiki: https://wiki.bnl.gov/EPIC/index.php?title=Background
 # Explanations on mixing scheme at https://github.com/eic/eic.github.io/blob/master/_resources/background_mixed_samples.md
-sf=0 
+sf=0
 
 if [ "$sf" -gt 0 ]; then
     sig_type="dis"
@@ -47,9 +47,10 @@ echo "2: DIS 18x275, no SR"
 echo "3: minbias 18x275"
 echo "4: DIS 10x275, SR scaled from 18GeV"
 echo "5: DIS 5x100, SR scaled from 18GeV"
+echo "6: Backgrounds only 18x275"
 
 # Read user input
-read -p "Enter option number (1-5): " option
+read -p "Enter option number (1-6): " option
 if   [[ "$option" == "1" ]]; then
     ebeam=18
     pbeam=275
@@ -57,7 +58,7 @@ if   [[ "$option" == "1" ]]; then
     signal="pythia8NCDIS_18x275_minQ2=1_beamEffects_xAngle=-0.025_hiDiv_1.hepmc"
     bg_files=(
         # "root://dtn-eic.jlab.org//volatile/eic/EPIC/EVGEN/BACKGROUNDS/SYNRAD/dataprod_rel_1.0.0/18x275/dataprod_rel_1.0.0_synrad_18x275_run001.hepmc3.tree.root" ## old SR samples with all inner beampipe photons
-        "dataprod_rel_1.0.0_synrad_18x275_run001.preproc_10000repeats.hepmc3.tree.root" ## new SR with outer beampipe photons only, freq=3.3GHz
+        "root://dtn-eic.jlab.org//volatile/eic/andrii/SynradG4_HepMC_Files_SR_on_IP6/data/synrad/dataprod_rel_1.0.0/18x275/dataprod_rel_1.0.0_synrad_18x275_run001.preproc_10000repeats.hepmc3.tree.root" ## new SR with outer beampipe photons only, freq=3.3GHz
         "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electronbrems/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electronbrems_18x275_50sec.hepmc3.tree.root"
         "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electroncoulomb/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electroncoulomb_18x275_50sec.hepmc3.tree.root"
         "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electrontouschek/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electrontouschek_18x275_50sec.hepmc3.tree.root"
@@ -126,6 +127,24 @@ elif [[ "$option" == "5" ]]; then
     )
     statuses=(2000 3000 4000 5000 6000) ## kHz
     freqs=(36608000 328.04 116.57 1112.3 22)
+
+elif [[ "$option" == "6" ]]; then
+    ebeam=18
+    pbeam=275
+    sig_type="bgOnly"
+    tag=""
+    signal="pythia8NCDIS_18x275_minQ2=1_beamEffects_xAngle=-0.025_hiDiv_1.hepmc"
+    bg_files=(
+        # "root://dtn-eic.jlab.org//volatile/eic/EPIC/EVGEN/BACKGROUNDS/SYNRAD/dataprod_rel_1.0.0/18x275/dataprod_rel_1.0.0_synrad_18x275_run001.hepmc3.tree.root" ## old SR samples with all inner beampipe photons
+        "root://dtn-eic.jlab.org//volatile/eic/andrii/SynradG4_HepMC_Files_SR_on_IP6/data/synrad/dataprod_rel_1.0.0/18x275/dataprod_rel_1.0.0_synrad_18x275_run001.preproc_10000repeats.hepmc3.tree.root" ## new SR with outer beampipe photons only, freq=3.3GHz
+        "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electronbrems/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electronbrems_18x275_50sec.hepmc3.tree.root"
+        "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electroncoulomb/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electroncoulomb_18x275_50sec.hepmc3.tree.root"
+        "root://dtn-eic.jlab.org//volatile/eic/andrii/Xsuite_HepMC_Files_ESR_BeamLoss_on_ePIC/data/xsuite/electrontouschek/dataprod_rel_1.0.1/18x275/dataprod_rel_1.0.1_electrontouschek_18x275_50sec.hepmc3.tree.root"
+        "root://dtn-eic.jlab.org//volatile/eic/EPIC/EVGEN/BACKGROUNDS/BEAMGAS/proton/pythia8.306-1.0/275GeV/pythia8.306-1.0_ProtonBeamGas_275GeV_run001.hepmc3.tree.root"
+    )
+    freqs=(3300000 18.26 0.86 0.55 22.5) ## kHz
+    statuses=(2000 3000 4000 5000 6000)
+
 else
     echo "Invalid option selected."
     exit 1
@@ -134,14 +153,15 @@ fi
 ## ------------------------------------------------
 ## assemble command
 ## ------------------------------------------------
-outfile=bgmerged_${sig_type}_${ebeam}x${pbeam}${tag}n${nev}.hepmc
+outfile=bgmerged_${sig_type}_${ebeam}x${pbeam}${tag}n${nev}.hepmc3.tree.root
 cmd="./SignalBackgroundMerger  -N ${nev} --rngSeed ${seed} -o merged/${outfile}"
 
 ## add signal
-if [ "$sf" -ge 0 ]; then ## use DIS signal file
+if [[ "$option" == "6" ]]; then
+    cmd+=" -i $signal -sf 0.01 -S $nskip -w $window"
+elif [ "$sf" -ge 0 ]; then ## use DIS signal file
     cmd+=" -i $signal -sf $sf -S $nskip -w $window"
 else ## use the default from the merger which is the sidis sample
-# /volatile/eic/EPIC/EVGEN/SIDIS/pythia6-eic/1.0.0/18x275/q2_0to1/
     cmd+=" -i pythia_ep_noradcor_18x275_q2_0.000000001_1.0_run1.ab.hepmc3.tree.root -sf 83 "
 fi
 

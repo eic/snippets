@@ -1,5 +1,5 @@
 # Low-momentum tracking efficiency
-The codes in this directory generate single-particle simulations at fixed momenta, with the primary goal being to understand the track-finding efficiency for lower-momentum particles. .
+The codes in this directory generate single-particle simulations at fixed momenta, with the primary goal being to understand the track-finding efficiency for lower-momentum particles.
 
 Running events through the ePIC simulation
 -------------------------------------------
