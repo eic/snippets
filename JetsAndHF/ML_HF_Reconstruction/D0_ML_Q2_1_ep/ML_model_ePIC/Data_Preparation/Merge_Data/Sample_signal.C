@@ -24,19 +24,12 @@ TFile *fout = new TFile(Form("merged_signal_y_D0_%1.1f_%1.1f_pt_D0_%1.1f_%1.1f.r
 TCanvas *c1 = new TCanvas("c1","c1",0,52,1400,1000);
 c1->SetGrid();
 c1->SetMargin(0.10, 0.03 ,0.12,0.07);
-
-TString std_cuts ="(mass_D0 > 1.6 && mass_D0 < 2.5) && d0xy_pi>0.02 && d0xy_k>0.02 && dca_12 < 0.07 && costheta > 0.95 && decay_length > 0.05 && dca_D0 < 0.1";
 double min_mass = 1.6, max_mass = 2.5;
 Int_t nTotalPar = 4;
 // Signal from D0 sample after preselection
 TFile *f_sig_D0sample = TFile::Open("../Filtered_D0Sample/SignalD0.root");	
 TTree *t_sig_D0sample = (TTree*)f_sig_D0sample->Get("treeMLSig");
-if(ymax > 0.5){
 t_sig_D0sample->Draw("mass_D0>>h_D0Sample(200,1.6,2.5)",Form("(y_D0>%f && y_D0<%f) && (pt_D0>%f && pt_D0<%f)",ymin,ymax,ptmin,ptmax),"goff");
-}
-else{
-t_sig_D0sample->Draw("mass_D0>>h_D0Sample(200,1.6,2.5)",Form("(y_D0>%f && y_D0<%f) && (pt_D0>%f && pt_D0<%f) && %s",ymin,ymax,ptmin,ptmax,std_cuts.Data()),"goff");	
-}
 TH1D *h0_D0Sample = (TH1D*)gDirectory->Get("h_D0Sample"); // access dynamically created histogram
 h0_D0Sample->SetMarkerColor(kGreen+2);
 
