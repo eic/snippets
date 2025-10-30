@@ -1,6 +1,8 @@
 # Example scripts for tracking performance study with beam background
 * See https://indico.bnl.gov/event/29753/
 * contact: Shujie Li, shujieli@lbl.gov
+### Note to general physics analysis:
+only use tracks with at least 4 hits, e.g.  __CentralCKFTrajectories.nMeaurements>3__ 
 
 ## run_merger.sh: 
 This is an example script to generate small sample of background mixed hepmc file locally.
@@ -26,16 +28,19 @@ Pleae always use background files from the simulation campaign data (https://eic
 
 
 ## epic_analysis-ak_example.ipynb
-example python script to pull out background particle distributions, track efficiency and purity etc.  It uses uproot (>2.7), seaborn, particle, and a few other python modules. You may need to pip install them. 
+example python script to pull out background particle distributions, hit rate per detector area, and track efficiency and purity etc.  It uses uproot (>2.7), seaborn, particle, and a few other python modules. You may need to pip install them. 
 
-Hopefully one can convert desired functions to plain python script, of ROOT/C easily with chatgpt. 
+Please navigate the jupyter notebook with section titles. One should be able to convert relevant code to plain python script, or ROOT/C easily with chatgpt. 
 
-* please run this within eic-shell if you want to use any podio modules:
-    1. in eic-shell, type jupyer-lab to start the server (may take a minute)
-    2. copy the localhost link to your browser or editor to open the notebook.
+* The ___inspect...___ section does not depend on podio
+   1. plot mcparticle generator status (signal or backgrounds)
+   2. plot number of detector hit on a given Silicon tracker surface per ms per unit area, see [this talk](https://indico.bnl.gov/event/29602/contributions/112847/attachments/64502/110757/background_rate_09022025.pdf)
+* to run the ___hit-based analysis___ section:
+   1. in eic-shell, type jupyer-lab to start the server (may take a minute)
+   2. copy the localhost link to your browser or editor to open the notebook
+   3. select the kernel provided by eic-shell to use podio modules
 
-* key functions: get_traj_hits, get_part_hits. Most interesting plots are under subsection "efficiency" and "track purity"
+   key functions: get_traj_hits, get_part_hits. Most interesting plots are under subsection "efficiency" and "track purity"
 
-* suggestion to general physics analysis: only use tracks with at least 4 hits, e.g.  __CentralCKFTrajectories.nMeaurements>3__ 
     
 
