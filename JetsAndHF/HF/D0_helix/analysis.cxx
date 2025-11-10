@@ -149,9 +149,9 @@ int main(int argc, char **argv)
   TTreeReaderArray<double> mcPartVx = {treereader, "MCParticles.vertex.x"};
   TTreeReaderArray<double> mcPartVy = {treereader, "MCParticles.vertex.y"};
   TTreeReaderArray<double> mcPartVz = {treereader, "MCParticles.vertex.z"};
-  TTreeReaderArray<float> mcMomPx = {treereader, "MCParticles.momentum.x"};
-  TTreeReaderArray<float> mcMomPy = {treereader, "MCParticles.momentum.y"};
-  TTreeReaderArray<float> mcMomPz = {treereader, "MCParticles.momentum.z"};
+  TTreeReaderArray<double> mcMomPx = {treereader, "MCParticles.momentum.x"};
+  TTreeReaderArray<double> mcMomPy = {treereader, "MCParticles.momentum.y"};
+  TTreeReaderArray<double> mcMomPz = {treereader, "MCParticles.momentum.z"};
   TTreeReaderArray<double> mcEndPointX = {treereader, "MCParticles.endpoint.x"};
   TTreeReaderArray<double> mcEndPointY = {treereader, "MCParticles.endpoint.y"};
   TTreeReaderArray<double> mcEndPointZ = {treereader, "MCParticles.endpoint.z"};
@@ -168,6 +168,12 @@ int main(int argc, char **argv)
   TTreeReaderArray<float> rcPosz = {treereader, "ReconstructedChargedParticles.referencePoint.z"};
   TTreeReaderArray<float> rcCharge = {treereader, "ReconstructedChargedParticles.charge"};
   TTreeReaderArray<int>   rcPdg = {treereader, "ReconstructedChargedParticles.PDG"};
+
+  // needed for accessing number of hits used for track reconstruction
+  TTreeReaderArray<unsigned int> partAssocTrk_begin = {treereader, "ReconstructedChargedParticles.tracks_begin"};
+  TTreeReaderArray<int> partAssocTrk_index = {treereader, "_ReconstructedChargedParticles_tracks.index"};
+  TTreeReaderArray<int> trkAssocTraj_index = {treereader, "_CentralCKFTracks_trajectory.index"};
+  TTreeReaderArray<unsigned int> nMeasurements = {treereader, "CentralCKFTrajectories.nMeasurements"};
 
   TTreeReaderArray<float> rcTrkLoca = {treereader, "CentralCKFTrackParameters.loc.a"};
   TTreeReaderArray<float> rcTrkLocb = {treereader, "CentralCKFTrackParameters.loc.b"};
@@ -282,7 +288,22 @@ int main(int argc, char **argv)
       pi_index.clear();
       k_index.clear();
       for(unsigned int rc_index=0; rc_index<rcMomPx.GetSize(); rc_index++)
-	{	  
+	{
+
+	  // cut on nhits
+
+	  // this assumes 1-to-1-to-1 correspondance between particle-track_trajectory
+	  int nhits = nMeasurements[rc_index];
+	  
+	  // the following implemenation is more robust
+	  // int begin_index = partAssocTrk_begin[rc_index]; // take the first track; currently there is 1-to-1 correspondance between track and particle
+	  // int track_index = partAssocTrk_index[begin_index];
+	  // int traj_index = trkAssocTraj_index[track_index]; // 1-to-1 correspondance between track and trajectory
+	  // int nhits = nMeasurements[traj_index];
+	  // printf("rc_index = %d, begin_index = %d, track_index = %d, traj_index = %d, nMeasurements = %d = %d\n", rc_index, begin_index, track_index, traj_index, nhits, nMeasurements[rc_index]);
+
+	  if(nhits<4) continue;
+	  
 	  if(pid_mode==0)
 	    {
 	      // Use truth PID information
