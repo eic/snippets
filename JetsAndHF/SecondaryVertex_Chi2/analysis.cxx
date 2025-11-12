@@ -72,7 +72,7 @@ void fcnVertexFit(int& npar, double* grad, double& fval, double* par, int iflag)
 void getDecayVertex_Chi2fit(const int index1, const int index2, double &s1, double &s2, TVector3 &vertex, double &chi2_ndf, double * parFitErr);
 
 TLorentzVector getPairParent(const int index1, const int index2, TVector3 vtx,
-			     float &dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, TVector3 &decayVertex, double &chi2_ndf,  double * parFitErr);
+			     float &dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, TVector3 &decayVertex,TVector3 &decayVertex_ana, double &chi2_ndf,  double * parFitErr);
 
 TTreeReaderArray<float> *rcMomPx2;
 TTreeReaderArray<float> *rcMomPy2;
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 
   if(argc==1)
     {
-      listname  = "test.list";
+      listname  = "/lustrehome/skumar/eic/my_analysis/D0_Sample_Chi2/test.list";
       outname = "test.root";
     }
 
@@ -199,13 +199,26 @@ int main(int argc, char **argv)
   hEventStat->GetXaxis()->SetBinLabel(7, "Reco Bkg D0");
 
   TH1F *hMcMult = new TH1F("hMcMult", "MC multiplicity (|#eta| < 3.5);N_{MC}", 50, 0, 50);
-  TH1F *hRes_SVx_Helixfit = new TH1F("hRes_SVx_Helixfit", "Fit method: Residual of SVx; SVx_{rec}-SVx_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
-  TH1F *hRes_SVy_Helixfit= new TH1F("hRes_SVy_Helixfit", "Fit method: Residual of SVy; SVy_{rec}-SVy_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
-  TH1F *hRes_SVz_Helixfit = new TH1F("hRes_SVz_Helixfit", "Fit method: Residual of SVz; SVz_{rec}-SVz_{mc} (mm); Entries (a.u.)", 1000, -5.0, 5.0);
   
-  TH1F *hRes_SVx_Helixfit_pull = new TH1F("hRes_SVx_Helixfit_pull", "Fit method: Pull of SVx; SVx_{rec}-SVx_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
-  TH1F *hRes_SVy_Helixfit_pull = new TH1F("hRes_SVy_Helixfit_pull", "Fit method: Pull of SVy; SVy_{rec}-SVy_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
-  TH1F *hRes_SVz_Helixfit_pull = new TH1F("hRes_SVz_Helixfit_pull", "Fit method: Pull of SVz; SVz_{rec}-SVz_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
+  // Secondary vertex with chi2 fit method
+  TH3F *hRes_SVx_Helixfit = new TH3F("hRes_SVx_Helixfit", "Fit method: Residual of SV (X); p_{T} (GeV/c); y ; SVx_{rec}-SVx_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVy_Helixfit = new TH3F("hRes_SVy_Helixfit", "Fit method: Residual of SV (Y); p_{T} (GeV/c); y ; SVy_{rec}-SVy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVz_Helixfit = new TH3F("hRes_SVz_Helixfit", "Fit method: Residual of SV (Z); p_{T} (GeV/c); y ; SVz_{rec}-SVz_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0);   
+ 
+  // Secondary vertex with analytical method
+  TH3F *hRes_SVx_Helixana = new TH3F("hRes_SVx_Helixana", "Analytical method: Residual of SV (X); p_{T} (GeV/c); y ; SVx_{rec}-SVx_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVy_Helixana = new TH3F("hRes_SVy_Helixana", "Analytical method: Residual of SV (Y); p_{T} (GeV/c); y ; SVy_{rec}-SVy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVz_Helixana = new TH3F("hRes_SVz_Helixana", "Analytical method: Residual of SV (Z); p_{T} (GeV/c); y ; SVz_{rec}-SVz_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0);   
+ 
+  // Secondary vertex  (XY) fit method
+  TH3F *hRes_SVxy_Helixfit = new TH3F("hRes_SVxy_Helixfit", "Fit method: Residual of SV (XY); p_{T} (GeV/c); y ; SVxy_{rec}-SVxy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+
+  // Secondary vertex  (XY) analytical method
+  TH3F *hRes_SVxy_Helixana = new TH3F("hRes_SVxy_Helixana", "Analytical method: Residual of SV (XY); p_{T} (GeV/c); y ; SVxy_{rec}-SVxy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+    
+  TH3F *hRes_SVx_Helixfit_pull = new TH3F("hRes_SVx_Helixfit_pull", "Fit method: Pull of SV (X); p_{T} (GeV/c); y ; SVx_{rec}-SVx_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVy_Helixfit_pull = new TH3F("hRes_SVy_Helixfit_pull", "Fit method: Pull of SV (Y); p_{T} (GeV/c); y ; SVy_{rec}-SVy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVz_Helixfit_pull = new TH3F("hRes_SVz_Helixfit_pull", "Fit method: Pull of SV (Z); p_{T} (GeV/c); y ; SVz_{rec}-SVz_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
   
   TH1F *hchi2_vtx = new TH1F("hchi2_vtx", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
   TH1F *hchi2_vtx_sig = new TH1F("hchi2_vtx_sig", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
@@ -303,9 +316,9 @@ int main(int argc, char **argv)
   TTreeReaderArray<double> mcPartVx = {treereader, "MCParticles.vertex.x"};
   TTreeReaderArray<double> mcPartVy = {treereader, "MCParticles.vertex.y"};
   TTreeReaderArray<double> mcPartVz = {treereader, "MCParticles.vertex.z"};
-  TTreeReaderArray<double> mcMomPx = {treereader, "MCParticles.momentum.x"};
-  TTreeReaderArray<double> mcMomPy = {treereader, "MCParticles.momentum.y"};
-  TTreeReaderArray<double> mcMomPz = {treereader, "MCParticles.momentum.z"};
+  TTreeReaderArray<float> mcMomPx = {treereader, "MCParticles.momentum.x"};
+  TTreeReaderArray<float> mcMomPy = {treereader, "MCParticles.momentum.y"};
+  TTreeReaderArray<float> mcMomPz = {treereader, "MCParticles.momentum.z"};
   TTreeReaderArray<double> mcEndPointX = {treereader, "MCParticles.endpoint.x"};
   TTreeReaderArray<double> mcEndPointY = {treereader, "MCParticles.endpoint.y"};
   TTreeReaderArray<double> mcEndPointZ = {treereader, "MCParticles.endpoint.z"};
@@ -362,7 +375,7 @@ int main(int argc, char **argv)
 
   // Define variables to store in the Ntuple
   float d0_pi_sig, d0_k_sig, d0xy_pi_sig, d0xy_k_sig, sum_d0xy_sig, dca_12_sig, dca_D0_sig, decay_length_sig;
-  float costheta_sig, costhetaxy_sig, pt_D0_sig, y_D0_sig, mass_D0_sig, sigma_vtx_sig, mult_sig, signif_d0xy_pi_sig, signif_d0xy_k_sig, chi2_dca_sig;
+  float costheta_sig, costhetaxy_sig, pt_D0_sig, y_D0_sig, mass_D0_sig, sigma_vtx_sig, mult_sig, signif_d0xy_pi_sig, signif_d0xy_k_sig;
   
     // Link the variables to the TTree branches
   tree_sig->Branch("d0_pi", &d0_pi_sig, "d0_pi/F");
@@ -382,14 +395,13 @@ int main(int argc, char **argv)
   tree_sig->Branch("mult", &mult_sig, "mult/F"); 
   tree_sig->Branch("signif_d0xy_pi", &signif_d0xy_pi_sig, "signif_d0xy_pi/F");               
   tree_sig->Branch("signif_d0xy_k", &signif_d0xy_k_sig, "signif_d0xy_k/F"); 
-  tree_sig->Branch("chi2_dca", &chi2_dca_sig, "chi2_dca/F"); 
   
   TFile *file_bkg = new TFile("BkgD0.root", "RECREATE");
   TTree *tree_bkg = new TTree("treeMLBkg", "treeMLBkg"); 
   
   // Define variables to store in the Ntuple
   float d0_pi_bkg, d0_k_bkg, d0xy_pi_bkg, d0xy_k_bkg, sum_d0xy_bkg, dca_12_bkg, dca_D0_bkg, decay_length_bkg;
-  float costheta_bkg, costhetaxy_bkg, pt_D0_bkg, y_D0_bkg, mass_D0_bkg, sigma_vtx_bkg, mult_bkg, signif_d0xy_pi_bkg, signif_d0xy_k_bkg, chi2_dca_bkg;
+  float costheta_bkg, costhetaxy_bkg, pt_D0_bkg, y_D0_bkg, mass_D0_bkg, sigma_vtx_bkg, mult_bkg, signif_d0xy_pi_bkg, signif_d0xy_k_bkg;
   // Link the variables to the TTree branches
   tree_bkg->Branch("d0_pi", &d0_pi_bkg, "d0_pi/F");
   tree_bkg->Branch("d0_k", &d0_k_bkg, "d0_k/F");
@@ -408,7 +420,6 @@ int main(int argc, char **argv)
   tree_bkg->Branch("mult", &mult_bkg, "mult/F");
   tree_bkg->Branch("signif_d0xy_pi", &signif_d0xy_pi_bkg, "signif_d0xy_pi/F");  
   tree_bkg->Branch("signif_d0xy_k", &signif_d0xy_k_bkg, "signif_d0xy_k/F");  
-  tree_bkg->Branch("chi2_dca", &chi2_dca_bkg, "chi2_dca/F");    
   
   int nevents = 0;
   int mult_charged = 0;
@@ -661,11 +672,11 @@ int main(int argc, char **argv)
 		    }
 
 		  float dcaDaughters, cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx;
-		  TVector3 decayVertex; 
+		  TVector3 decayVertex, decayVertex_ana; 
 		  double chi2_ndf;
 		  double err_Par[5];  // or whatever size is appropriate
       //double* err_Par = errParArray;
-		  TLorentzVector parent = getPairParent(pi_index[i], k_index[j], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx,decayVertex,chi2_ndf, err_Par);
+		  TLorentzVector parent = getPairParent(pi_index[i], k_index[j], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx,decayVertex,decayVertex_ana,chi2_ndf, err_Par);
 		  hchi2_vtx->Fill(chi2_ndf);
 				  
 		  if(is_D0_pik)
@@ -675,13 +686,20 @@ int main(int argc, char **argv)
 		   
 		  // printf("Signal MC Vertex Kaon = (%f, %f, %f)\n",MCVertex_Kaon.X(), MCVertex_Kaon.Y(), MCVertex_Kaon.Z());	 	
 		  // printf("Signal MC Vertex Pion = (%f, %f, %f)\n",MCVertex_Pion.X(), MCVertex_Pion.Y(), MCVertex_Pion.Z());
-		      hRes_SVx_Helixfit->Fill((decayVertex.X()-MCVertex_Kaon.X()*0.1)*10);
-		      hRes_SVy_Helixfit->Fill((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
-		      hRes_SVz_Helixfit->Fill((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);	
+		      hRes_SVx_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.X()-MCVertex_Kaon.X()*0.1)*10);
+		      hRes_SVy_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
+		      hRes_SVz_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);	
 		      
-		      hRes_SVx_Helixfit_pull->Fill(((decayVertex.X()-MCVertex_Kaon.X()*0.1))/err_Par[0]);
-		      hRes_SVy_Helixfit_pull->Fill(((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/err_Par[1]);
-		      hRes_SVz_Helixfit_pull->Fill(((decayVertex.Z()-MCVertex_Kaon.Z()*0.1))/err_Par[2]);	
+		      hRes_SVx_Helixana->Fill(parent.Pt(), parent.Rapidity(), (decayVertex_ana.X()-MCVertex_Kaon.X()*0.1)*10);
+		      hRes_SVy_Helixana->Fill(parent.Pt(), parent.Rapidity(), (decayVertex_ana.Y()-MCVertex_Kaon.Y()*0.1)*10);
+		      hRes_SVz_Helixana->Fill(parent.Pt(), parent.Rapidity(), (decayVertex_ana.Z()-MCVertex_Kaon.Z()*0.1)*10);
+		      
+		      hRes_SVxy_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.Perp()-MCVertex_Kaon.Perp()*0.1)*10);
+		      hRes_SVxy_Helixana->Fill(parent.Pt(), parent.Rapidity(), (decayVertex_ana.Perp()-MCVertex_Kaon.Perp()*0.1)*10);
+		      
+		      hRes_SVx_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.X()-MCVertex_Kaon.X()*0.1))/(err_Par[0]));
+		      hRes_SVy_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/(err_Par[1]));
+		      hRes_SVz_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.Z()-MCVertex_Kaon.Z()*0.1))/(err_Par[2]));	
 		      
 		      hchi2_vtx_sig->Fill(chi2_ndf);		      
 		            		   
@@ -715,7 +733,6 @@ int main(int argc, char **argv)
 			    mass_D0_sig = parent.M();
 			    sigma_vtx_sig = sigma_vtx;
 			    mult_sig = mult_charged;
-			    chi2_dca_sig = chi2_ndf;
 			    tree_sig->Fill();
 		    }
 		  else
@@ -748,7 +765,6 @@ int main(int argc, char **argv)
 			    mass_D0_bkg = parent.M();
 			    sigma_vtx_bkg = sigma_vtx;
 			    mult_bkg = mult_charged;
-			    chi2_dca_bkg = chi2_ndf;			    
 			    tree_bkg->Fill();
 		    }
 
@@ -794,7 +810,13 @@ int main(int argc, char **argv)
   hRes_SVx_Helixfit->Write();
   hRes_SVy_Helixfit->Write();
   hRes_SVz_Helixfit->Write(); 
-  
+  hRes_SVxy_Helixfit->Write();  
+ 
+  hRes_SVx_Helixana->Write();
+  hRes_SVy_Helixana->Write();
+  hRes_SVz_Helixana->Write();
+  hRes_SVxy_Helixana->Write();    
+      
   hchi2_vtx->Write();
   hchi2_vtx_sig->Write();
   hchi2_vtx_bkg->Write();  
@@ -871,7 +893,7 @@ TVector3 getDcaToVtx(const int index, TVector3 vtx)
 
 //======================================
 TLorentzVector getPairParent(const int index1, const int index2, TVector3 vtx,
-			     float &dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, TVector3 &decayVertex, double &chi2_ndf, double * parFitErr)
+			     float &dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, TVector3 &decayVertex, TVector3 &decayVertex_ana, double &chi2_ndf, double * parFitErr)
 {
   // -- get helix
   TVector3 pos1(rcTrkLoca2->At(index1) * sin(rcTrkPhi2->At(index1)) * -1 * millimeter, rcTrkLoca2->At(index1) * cos(rcTrkPhi2->At(index1)) * millimeter, rcTrkLocb2->At(index1) * millimeter);
@@ -910,7 +932,7 @@ TLorentzVector getPairParent(const int index1, const int index2, TVector3 vtx,
   TLorentzVector parent = p1FourMom + p2FourMom;
 
   // -- calculate decay vertex (secondary or tertiary)
- // decayVertex = (p1AtDcaToP2 + p2AtDcaToP1) * 0.5 ;
+  decayVertex_ana = (p1AtDcaToP2 + p2AtDcaToP1) * 0.5 ;
   sigma_vtx = sqrt((p1AtDcaToP2-decayVertex).Mag2()+(p2AtDcaToP1-decayVertex).Mag2())/millimeter;
 	
   // -- calculate pointing angle and decay length with respect to primary vertex
@@ -1008,7 +1030,7 @@ void getDecayVertex_Chi2fit(const int index1, const int index2, double &s1, doub
     chi2_ndf = fitter.Result().MinFcnValue()/ndf;  // Minimum value of your function
     
     int status = fitter.Result().Status();
-    if (status>0 ) {printf("Fit Failed!!!!\n");}
+  //  if (status>0 ) {printf("Fit Failed!!!!\n");}
    // if (status>0 || chi2_ndf>10. ) return;
    // cout <<"\033[1;31m Fit Result Chi2:\033[0m"<<chi2_ndf<<endl;
    // result.Print(std::cout);
@@ -1023,7 +1045,7 @@ void getDecayVertex_Chi2fit(const int index1, const int index2, double &s1, doub
     
    for (int i = 0; i < nPar; ++i) parFitErr[i] = FitErr[i];
    vertex.SetXYZ(parFit[0], parFit[1], parFit[2]);
-   s1 = parFit[3]; s2 = parFit[4]; 	
+   s1 = parFit[3]; s2 = parFit[4];
 }
 
 
