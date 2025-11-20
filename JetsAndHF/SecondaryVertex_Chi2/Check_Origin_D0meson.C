@@ -1,5 +1,6 @@
-// Code to check the decaylength of D0 at the simulation level.
+// Code to check the orgin of D0 (prompt vs non-prompt) at the simulation level.
 // Shyam Kumar; shyam.kumar@ba.infn.it; shyam055119@gmail.com
+
 int GetD0OriginFlavor(int imc, const TTreeReaderArray<int> &mcPartPdg, const TTreeReaderArray<unsigned int> &mcPartParent_begin, const TTreeReaderArray<unsigned int> &mcPartParent_end, const TTreeReaderArray<int> &mcPartParent_index);
 void Check_Origin_D0meson(TString filelist = "test.list"){
      gStyle->SetOptStat(0); 
