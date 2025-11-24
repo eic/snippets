@@ -697,9 +697,10 @@ int main(int argc, char **argv)
 				// Signed Δv_xy
 			  TVector3 dV = (decayVertex-MCVertex_Kaon*0.1)*10; dV.SetZ(0.);   // remove z-component
 			  TVector3 pTD0V = parent.Vect(); pTD0V.SetZ(0.);
-              double dvxy_signed = dV.Dot(pTD0V.Unit()); 
-		      hRes_SVxy_Helixfit->Fill(parent.Pt(), parent.Rapidity(), dvxy_signed);
-		      hRes_SVxy_Helixana->Fill(parent.Pt(), parent.Rapidity(), dvxy_signed);
+              double dvxy_sign = dV.Dot(pTD0V.Unit()); 
+			  int sign = (dvxy_sign >= 0 ? +1 : -1);	
+		      hRes_SVxy_Helixfit->Fill(parent.Pt(), parent.Rapidity(), sign*dV.Mag());
+		      hRes_SVxy_Helixana->Fill(parent.Pt(), parent.Rapidity(), sign*dV.Mag());
 		      
 		      hRes_SVx_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.X()-MCVertex_Kaon.X()*0.1))/(err_Par[0]));
 		      hRes_SVy_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/(err_Par[1]));
