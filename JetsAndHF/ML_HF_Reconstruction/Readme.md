@@ -1,6 +1,6 @@
 # A Machine Learning Framework for Heavy-Flavor Analysis in the ePIC Experiment
 
-Supported by The FAIR Spoke 6 Project, funded by the NextGenerationEU program in Italy
+Supported by The FAIR (Future Artificial Intelligence Research) Spoke 6 Project, funded by the NextGenerationEU program in Italy
 
 based on hipe4ml:https://doi.org/10.5281/zenodo.5070131
 
