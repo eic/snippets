@@ -6,6 +6,14 @@ for identifying if a calorimter hit/cluster from an _electormagnetic_
 or _hadronic_ calorimeter in a generic way.
 
 
+## Inputs/Outputs
+
+Processes `.edm4hep.root` output from `npsim`. Generates a few
+histograms comparing the `(z, r)` and `(eta, r)` distributions
+for hits for different types of detectors (trackers, cherenkov,
+calorimeters, etc.).
+
+
 ## Dependencies
 
 Needs `PODIO` and `edm4hep`. If you're running in the eic-shell,

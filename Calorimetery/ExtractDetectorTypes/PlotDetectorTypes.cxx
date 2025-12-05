@@ -21,7 +21,6 @@
 #include <DDRec/CellIDPositionConverter.h>
 #include <edm4hep/SimCalorimeterHitCollection.h>
 #include <edm4hep/SimTrackerHitCollection.h>
-#include <edm4hep/Vector3f.h>
 #include <edm4hep/utils/vector_utils.h>
 #include <podio/CollectionBase.h>
 #include <podio/Frame.h>
@@ -30,13 +29,10 @@
 #include <TError.h>
 #include <TFile.h>
 #include <TH2.h>
-#include <cassert>
+#include <TLegend.h>
 #include <cmath>
-#include <cstdlib>
 #include <iostream>
-#include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 
@@ -47,10 +43,12 @@
 struct Options {
   std::string ifile;    // input file
   std::string ofile;    // output file
+  std::string title;    // histogram titles
   bool        progress; // print progress through frame loop
 } DefaultOptions = {
-  "./forEMxHCalFlags.withTrackerTypesPropagated.py8ncdis18x275q1Knevt1K.edm4hep.root",
-  "test.root",
+  "./forEMxHCalFlags.withAllTypesPropagated.py8ncdis18x275q1Knevt1K.edm4hep.root",
+  "compareTypeFlags.py8ncdis18x275q1Knevt1K.root",
+  "#bf{ePIC} Simulation, NC DIS 18x275 GeV, Q^{2} > 1K GeV, N_{evt} = 1K",
   true
 };
 
@@ -101,21 +99,31 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
   };
 
   // histogram binnings to use
-  std::vector<Bin> bins = {
-      {20000, -10, 10},  // eta
-      {550,  -50, 500}   // r [cm]
+  const std::vector<Bin> bins = {
+      {1000,  -50, 50},    // z [m]
+      {20000, -10,   10},  // eta
+      {550,   -50,   500}  // r [cm]
   };
 
   // axis titles
-  std::string axes(";#eta; r [cm]");
+  const std::string axRxZ   = opt.title + ";z [m]; r [cm]";
+  const std::string axRxEta = opt.title + ";#eta; r [cm]";
 
-  // define histograms
-  TH2D* hPIDRxZ    = new TH2D("hPIDRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins [1].num, bins[1].start, bins[1].stop);
-  TH2D* hTrkrRxZ   = new TH2D("hTrkrRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins[1].num, bins[1].start, bins[1].stop);
-  TH2D* hECalRxZ   = new TH2D("hECalRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins[1].num, bins[1].start, bins[1].stop);
-  TH2D* hHCalRxZ   = new TH2D("hHCalRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins[1].num, bins[1].start, bins[1].stop);
-  TH2D* hBarrelRxZ = new TH2D("hBarrelRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins[1].num, bins[1].start, bins[1].stop);
-  TH2D* hEndcapRxZ = new TH2D("hEndcapRxZ", axes.data(), bins[0].num, bins[0].start, bins[0].stop, bins[1].num, bins[1].start, bins[1].stop);
+  // define R vs. Z histograms
+  TH2D* hPIDRxZ    = new TH2D("hPIDRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hTrkrRxZ   = new TH2D("hTrkrRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hECalRxZ   = new TH2D("hECalRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hHCalRxZ   = new TH2D("hHCalRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hBarrelRxZ = new TH2D("hBarrelRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hEndcapRxZ = new TH2D("hEndcapRxZ", axRxZ.data(), bins[0].num, bins[0].start, bins[0].stop, bins[2].num, bins[2].start, bins[2].stop);
+
+  // define R vs. eta histograms
+  TH2D* hPIDRxEta    = new TH2D("hPIDRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hTrkrRxEta   = new TH2D("hTrkrRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hECalRxEta   = new TH2D("hECalRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hHCalRxEta   = new TH2D("hHCalRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hBarrelRxEta = new TH2D("hBarrelRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
+  TH2D* hEndcapRxEta = new TH2D("hEndcapRxEta", axRxEta.data(), bins[1].num, bins[1].start, bins[1].stop, bins[2].num, bins[2].start, bins[2].stop);
   std::cout << "    Created histograms." << std::endl;
 
   // --------------------------------------------------------------------------
@@ -145,6 +153,7 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
   //   --> this will be needed to look up volume
   //       context for a hit
   dd4hep::rec::CellIDPositionConverter converter(*detector);
+  std::cout << "    Initialize cellID-position converter" << std::endl;
 
   // set which calo hit collections to plot
   std::vector<std::string> calCollects = {
@@ -235,9 +244,10 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
         //   --> we'll need this to lookup the volume context
         const auto id = hit.getCellID();
 
-        // calculate hit position in (eta, r) space
+        // calculate hit position in (eta, r) and (z, r) space
         const double eta = edm4hep::utils::eta(hit.getPosition()); 
         const double rad = std::hypot(hit.getPosition().x, hit.getPosition().y) / 10.;
+        const double zed = hit.getPosition().z / 1000.;
 
         // grab grab volume context via CellID-position converter
         //   --> the volume context maps CellIDs onto the actual
@@ -249,16 +259,20 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
           const dd4hep::DetType    type(det.typeFlag());
           if (type.is(dd4hep::DetType::CALORIMETER)) {
             if (type.is(dd4hep::DetType::ELECTROMAGNETIC)) {
-              hECalRxZ -> Fill(eta, rad);
+              hECalRxZ   -> Fill(zed, rad);
+              hECalRxEta -> Fill(eta, rad);
             }
             if (type.is(dd4hep::DetType::HADRONIC)) {
-              hHCalRxZ -> Fill(eta, rad);
+              hHCalRxZ   -> Fill(zed, rad);
+              hHCalRxEta -> Fill(eta, rad);
             }
             if (type.is(dd4hep::DetType::BARREL)) {
-              hBarrelRxZ -> Fill(eta, rad);
+              hBarrelRxZ   -> Fill(zed, rad);
+              hBarrelRxEta -> Fill(eta, rad);
             }
             if (type.is(dd4hep::DetType::ENDCAP)) {
-              hEndcapRxZ -> Fill(eta, rad);
+              hEndcapRxZ   -> Fill(zed, rad);
+              hEndcapRxEta -> Fill(eta, rad);
             }
           }
         }
@@ -276,9 +290,10 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
         //   --> we'll need this to lookup the volume context
         const auto id = hit.getCellID();
 
-        // calculate hit position in (eta, r) space
+        // calculate hit position in (eta, r) and (z, r) space
         const double eta = edm4hep::utils::eta(hit.getPosition()); 
         const double rad = std::hypot(hit.getPosition().x, hit.getPosition().y) / 10.;
+        const double zed = hit.getPosition().z / 1000.;
 
         // grab grab volume context via CellID-position converter
         //   --> the volume context maps CellIDs onto the actual
@@ -290,12 +305,15 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
           const dd4hep::DetType    type(det.typeFlag());
           if (type.is(dd4hep::DetType::TRACKER)) {
             if (type.is(dd4hep::DetType::BARREL)) {
-              hBarrelRxZ -> Fill(eta, rad);
+              hBarrelRxZ   -> Fill(zed, rad);
+              hBarrelRxEta -> Fill(eta, rad);
             }
             if (type.is(dd4hep::DetType::ENDCAP)) {
-              hEndcapRxZ -> Fill(eta, rad);
+              hEndcapRxZ   -> Fill(zed, rad);
+              hEndcapRxEta -> Fill(eta, rad);
             }
-            hTrkrRxZ -> Fill(eta, rad);
+            hTrkrRxZ   -> Fill(zed, rad);
+            hTrkrRxEta -> Fill(eta, rad);
           }
         }
       }  // end hit loop
@@ -312,9 +330,10 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
         //   --> we'll need this to lookup the volume context
         const auto id = hit.getCellID();
 
-        // calculate hit position in (eta, r) space
+        // calculate hit position in (eta, r) and (z, r) space
         const double eta = edm4hep::utils::eta(hit.getPosition()); 
         const double rad = std::hypot(hit.getPosition().x, hit.getPosition().y) / 10.;
+        const double zed = hit.getPosition().z / 1000.;
 
         // grab grab volume context via CellID-position converter
         //   --> the volume context maps CellIDs onto the actual
@@ -326,12 +345,15 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
           const dd4hep::DetType    type(det.typeFlag());
           if (type.is(dd4hep::DetType::CHERENKOV)) {
             if (type.is(dd4hep::DetType::BARREL)) {
-              hBarrelRxZ -> Fill(eta, rad);
+              hBarrelRxZ   -> Fill(zed, rad);
+              hBarrelRxEta -> Fill(eta, rad);
             }
             if (type.is(dd4hep::DetType::ENDCAP)) {
-              hEndcapRxZ -> Fill(eta, rad);
+              hEndcapRxZ   -> Fill(zed, rad);
+              hEndcapRxEta -> Fill(eta, rad);
             }
-            hPIDRxZ -> Fill(eta, rad);
+            hPIDRxZ   -> Fill(zed, rad);
+            hPIDRxEta -> Fill(eta, rad);
           }
         }
       }  // end hit loop
@@ -371,30 +393,96 @@ void PlotDetectorTypes(const Options& opt = DefaultOptions) {
   hEndcapRxZ -> SetLineColor(kEndcap);
   hEndcapRxZ -> SetFillColor(kEndcap);
 
-  // plot to compare
+  hPIDRxEta    -> SetMarkerColor(kPID);
+  hPIDRxEta    -> SetLineColor(kPID);
+  hPIDRxEta    -> SetFillColor(kPID);
+  hTrkrRxEta   -> SetMarkerColor(kTrkr);
+  hTrkrRxEta   -> SetLineColor(kTrkr);
+  hTrkrRxEta   -> SetFillColor(kTrkr);
+  hECalRxEta   -> SetMarkerColor(kECal);
+  hECalRxEta   -> SetLineColor(kECal);
+  hECalRxEta   -> SetFillColor(kECal);
+  hHCalRxEta   -> SetMarkerColor(kHCal);
+  hHCalRxEta   -> SetLineColor(kHCal);
+  hHCalRxEta   -> SetFillColor(kHCal);
+  hBarrelRxEta -> SetMarkerColor(kBarrel);
+  hBarrelRxEta -> SetLineColor(kBarrel);
+  hBarrelRxEta -> SetFillColor(kBarrel);
+  hEndcapRxEta -> SetMarkerColor(kEndcap);
+  hEndcapRxEta -> SetLineColor(kEndcap);
+  hEndcapRxEta -> SetFillColor(kEndcap);
+  std::cout << "    Set histogram styles." << std::endl;
+
+  // create legends
+  TLegend* lType = new TLegend(0.115, 0.695, 0.315, 0.895);
+  lType -> SetFillColor(0);
+  lType -> SetFillStyle(0);
+  lType -> SetLineColor(0);
+  lType -> SetLineStyle(0);
+  lType -> SetTextFont(43);
+  lType -> SetTextSize(27);
+  lType -> AddEntry(hTrkrRxZ, "DetType::TRACKER", "f");
+  lType -> AddEntry(hPIDRxZ, "DetType::CHERENKOV", "f");
+  lType -> AddEntry(hECalRxZ, "DetType::ELECTROMAGNETIC", "f");
+  lType -> AddEntry(hHCalRxZ, "DetType::HADRONIC", "f");
+
+  TLegend* lRegion = new TLegend(0.115, 0.795, 0.315, 0.895);
+  lRegion -> SetFillColor(0);
+  lRegion -> SetFillStyle(0);
+  lRegion -> SetLineColor(0);
+  lRegion -> SetLineStyle(0);
+  lRegion -> SetTextFont(43);
+  lRegion -> SetTextSize(27);
+  lRegion -> AddEntry(hBarrelRxZ, "DetType::BARREL", "f");
+  lRegion -> AddEntry(hEndcapRxZ, "DetType::ENDCAP", "f");
+
+  // make plots to compare:
   //   --> tracker vs. ecal vs. hcal
   //   --> barrel vs. endcap
-  TCanvas* cType = new TCanvas("cType", "", 950, 950);
-  cType    -> SetTopMargin(0.02);
-  cType    -> SetRightMargin(0.02);
-  cType    -> cd(); 
+  TCanvas* cTypeRxZ = new TCanvas("cTypeRxZ", "", 950, 950);
+  cTypeRxZ -> SetRightMargin(0.02);
+  cTypeRxZ -> cd();
   hTrkrRxZ -> Draw("BOX");
   hPIDRxZ  -> Draw("BOX SAME");
   hECalRxZ -> Draw("BOX SAME");
   hHCalRxZ -> Draw("BOX SAME");
+  lType    -> Draw();
   output   -> cd();
-  cType    -> Write();
-  cType    -> Close();
+  cTypeRxZ -> Write();
+  cTypeRxZ -> Close();
 
-  TCanvas* cRegion = new TCanvas("cRegion", "", 950, 950);
-  cRegion    -> SetTopMargin(0.02);
-  cRegion    -> SetRightMargin(0.02);
-  cRegion    -> cd();
+  TCanvas* cRegionRxZ = new TCanvas("cRegionRxZ", "", 950, 950);
+  cRegionRxZ -> SetRightMargin(0.02);
+  cRegionRxZ -> cd();
   hBarrelRxZ -> Draw("BOX");
   hEndcapRxZ -> Draw("BOX SAME");
+  lRegion    -> Draw();
   output     -> cd();
-  cRegion    -> Write();
-  cRegion    -> Close();
+  cRegionRxZ -> Write();
+  cRegionRxZ -> Close();
+
+  TCanvas* cTypeRxEta = new TCanvas("cTypeRxEta", "", 950, 950);
+  cTypeRxEta -> SetRightMargin(0.02);
+  cTypeRxEta -> cd();
+  hTrkrRxEta -> Draw("BOX");
+  hPIDRxEta  -> Draw("BOX SAME");
+  hECalRxEta -> Draw("BOX SAME");
+  hHCalRxEta -> Draw("BOX SAME");
+  lType      -> Draw();
+  output     -> cd();
+  cTypeRxEta -> Write();
+  cTypeRxEta -> Close();
+
+  TCanvas* cRegionRxEta = new TCanvas("cRegionRxEta", "", 950, 950);
+  cRegionRxEta -> SetRightMargin(0.02);
+  cRegionRxEta -> cd();
+  hBarrelRxEta -> Draw("BOX");
+  hEndcapRxEta -> Draw("BOX SAME");
+  lRegion      -> Draw();
+  output       -> cd();
+  cRegionRxEta -> Write();
+  cRegionRxEta -> Close();
+  std::cout << "    Made comparison plots." << std::endl;
 
   // --------------------------------------------------------------------------
   // save & exit
