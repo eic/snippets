@@ -1,4 +1,4 @@
-# Extracting Detector Type from Calorimeter (and more) Hits
+# Extracting Detector Type From Calorimeter (and Tracker) Hits
 
 A short ROOT macro illustrating how to extract the [detector type](https://github.com/AIDASoft/DD4hep/blob/912413d08ca432cc3d84632aa936d83960f6999a/DDCore/include/DD4hep/DetType.h#L40)
 from a calorimter (or tracker) hit. This is particularly relevant
