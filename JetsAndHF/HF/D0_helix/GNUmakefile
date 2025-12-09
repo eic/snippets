@@ -9,7 +9,7 @@ INCFLAGS = -I$(shell root-config --incdir)
 LDFLAGS = -L$(shell root-config --libdir)
 
 CXX = g++
-FLAGS = -Wall -g $(INCFLAGS) $(LDFLAGS)
+FLAGS = -Wall -g $(ROOTCFLAGS) $(INCFLAGS) $(LDFLAGS)
 
 COMPILE = $(CXX) $(FLAGS) -c 
 
