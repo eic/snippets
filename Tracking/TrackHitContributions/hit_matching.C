@@ -1,10 +1,4 @@
-#include <edm4hep/SimTrackerHitCollection.h>
-#include <edm4eic/TrackerHitCollection.h>
-#include <edm4eic/Measurement2DCollection.h>
-#include <edm4eic/TrackCollection.h>
-#include <edm4eic/MCRecoTrackerHitAssociationCollection.h>
-#include <podio/Frame.h>
-#include <podio/ROOTReader.h>
+//
 
 //SimHit collections
 std::vector<std::string> sim_coll_names{
@@ -24,10 +18,9 @@ std::vector<std::string> rec_coll_names{
 std::vector<unsigned int> rec_coll_ids;
 
 //Simulation file to use
-//std::string input_file = "input/eicrecon_etof_test_local.root";
-//std::string input_file = "input/eicrecon_etof_test.root";
 std::string input_file = "input/eicrecon_out_2GeV.root";
-
+//std::string input_file = "input/eicrecon_out_5GeV.root";
+//std::string input_file = "input/eicrecon_out_20GeV.root";
 
 //------------------
 //Template to access 'sign' of radius in (x,y) plane
@@ -40,25 +33,36 @@ template <typename T> int sgn(T val) {
 vector<unsigned int> get_coll_ids(vector<string> coll_names){
 
 	vector<unsigned int> coll_ids;
-	
-        TFile *f = new TFile(input_file.c_str());
-        TTree *t = (TTree*) f->Get("podio_metadata");
 
-        TTreeReader tr(t);
-        TTreeReaderArray<unsigned int> c_ids(tr,"events___idTable.m_collectionIDs");
-        TTreeReaderArray<string> c_names(tr,"events___idTable.m_names");	
+	podio::ROOTReader reader;
+	reader.openFile(input_file.c_str());
 
-	tr.Next();
+	unsigned nEntries = reader.getEntries(podio::Category::Event);
 
-	//Find the associated collection ID
-	for(int iname = 0; iname < coll_names.size(); iname++) {
-		for(int icol=0;icol<c_ids.GetSize();icol++){
-			if( c_names[icol] == coll_names[iname] )
-				coll_ids.push_back(c_ids[icol]);
-		}
-	}
+	//Find the associated collection IDs
+	for (unsigned i = 0; i < nEntries; ++i) {
 
-	delete f;
+		if(i > 0) break;
+
+    		auto frameData = reader.readEntry(podio::Category::Event, i);
+    		auto frame     = podio::Frame(std::move(frameData));
+
+    		auto collectionNames = frame.getAvailableCollections();
+
+		// Find associated collection ID for each track collection
+                for(int iname = 0; iname < coll_names.size(); iname++) {
+
+			for (const auto& name : collectionNames) {
+				const auto* coll = frame.get(name);
+      				if (coll) {
+        				unsigned int collectionID = coll->getID();
+					if( name == coll_names[iname] )
+					coll_ids.push_back(collectionID);
+				}
+			}
+
+		} //Loop over track collections
+	} //Loop over events
 
 	return coll_ids;
 }
@@ -239,7 +243,6 @@ void hit_matching(){
 
 	//Loop over events. Can I do this more easily?
 	for( unsigned int ievent = 0; ievent < nevents; ievent++){
-
 		if((ievent%1000)==0) cout<<"Processed event "<<ievent<<endl;
 
 		//Get event
@@ -276,7 +279,7 @@ void hit_matching(){
 				auto quality = hit.getQuality();
 
 				//MCParticle associated with simhit
-				auto hit_mcpart = hit.getMCParticle();
+				auto hit_mcpart = hit.getParticle();
 				auto mc_index = hit_mcpart.getObjectID().index;
 				auto mc_pdg = hit_mcpart.getPDG();
 				auto mc_status = hit_mcpart.getGeneratorStatus();
@@ -337,8 +340,8 @@ void hit_matching(){
 				for (const auto raw_hit_assoc : raw_hit_assocs) {
 					if (raw_hit_assoc.getRawHit() == raw_hit) {
 						auto sim_hit = raw_hit_assoc.getSimHit();
-                        			auto mc_particle = sim_hit.getMCParticle();
-						auto mc_status = sim_hit.getMCParticle().getGeneratorStatus();
+                        			auto mc_particle = sim_hit.getParticle();
+						auto mc_status = sim_hit.getParticle().getGeneratorStatus();
 						auto quality = sim_hit.getQuality();
 
 						if(mc_status==1 && quality==0){ 
@@ -390,8 +393,8 @@ void hit_matching(){
                         for (const auto raw_hit_assoc : raw_hit_assocs) {
                         	if (raw_hit_assoc.getRawHit() == raw_hit) {
                                 	auto sim_hit = raw_hit_assoc.getSimHit();
-                                       	auto mc_particle = sim_hit.getMCParticle();
-                                        auto mc_status = sim_hit.getMCParticle().getGeneratorStatus();
+                                       	auto mc_particle = sim_hit.getParticle();
+                                        auto mc_status = sim_hit.getParticle().getGeneratorStatus();
                                         auto quality = sim_hit.getQuality();
 					
                                         if(mc_status==1 && quality==0){
@@ -454,8 +457,8 @@ void hit_matching(){
 				for (const auto raw_hit_assoc : raw_hit_assocs) {
 					if (raw_hit_assoc.getRawHit() == raw_hit) {
 						auto sim_hit = raw_hit_assoc.getSimHit();
-                        			auto mc_particle = sim_hit.getMCParticle();
-						auto mc_status = sim_hit.getMCParticle().getGeneratorStatus();
+                        			auto mc_particle = sim_hit.getParticle();
+						auto mc_status = sim_hit.getParticle().getGeneratorStatus();
 						auto quality = sim_hit.getQuality();
 
 						if(mc_status==1 && quality==0){
@@ -514,8 +517,8 @@ void hit_matching(){
 				for (const auto raw_hit_assoc : raw_hit_assocs) {
 					if (raw_hit_assoc.getRawHit() == raw_hit) {
 						auto sim_hit = raw_hit_assoc.getSimHit();
-                        			auto mc_particle = sim_hit.getMCParticle();
-						auto mc_status = sim_hit.getMCParticle().getGeneratorStatus();
+                        			auto mc_particle = sim_hit.getParticle();
+						auto mc_status = sim_hit.getParticle().getGeneratorStatus();
 						auto quality = sim_hit.getQuality();
 
 						if(mc_status==1 && quality==0){
@@ -590,12 +593,14 @@ void hit_matching(){
 	TH1* h8cs = (TH1D*)h8c->Clone("h8cs");
 	h8cs->GetYaxis()->SetTitle("Fraction of associated digitized hits");
         h8cs->Divide(h8a);
-
+ 
 	hh1d->Add(hh1a,hh1b,1,-1); //Subtract track measurement hits from associated hits
 	hh1d->Add(hh1c,-1); //Also subtract outlier hits
+	hh1d->SetMinimum(0);
 
 	hh2d->Add(hh2a,hh2b,1,-1); //Subtract track measurement hits from associated hits
         hh2d->Add(hh2c,-1); //Also subtract outlier hits
+	hh2d->SetMinimum(0);
 
 	//Histogram stacking
 	THStack *stack1 = new THStack("stack1", "Stacked Histograms");
@@ -704,9 +709,15 @@ void hit_matching(){
 	c10b->Print("plots/hit_matching.pdf");
 	c10c->Print("plots/hit_matching.pdf");
 	c10d->Print("plots/hit_matching.pdf");
-	c11a->Print("plots/hit_matching.pdf");
-	c11b->Print("plots/hit_matching.pdf");
-	c11c->Print("plots/hit_matching.pdf");
-	c11d->Print("plots/hit_matching.pdf");
-	c11d->Print("plots/hit_matching.pdf]");
+	if(ftof_back_xy){
+		c11a->Print("plots/hit_matching.pdf");
+		c11b->Print("plots/hit_matching.pdf");
+		c11c->Print("plots/hit_matching.pdf");
+		c11d->Print("plots/hit_matching.pdf");
+		c11d->Print("plots/hit_matching.pdf]");
+	}
+	else{
+		c10d->Print("plots/hit_matching.pdf]");
+	}
+
 }
