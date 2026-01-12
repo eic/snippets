@@ -24,4 +24,4 @@ If you want to get familiar with hipe4ml, the following tutorials are available:
 
 | Type | Link |
 | -------------- | ------------- |
-| Binary classifier |  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]([https://colab.research.google.com/drive/1JtKXPSfRBXTOu4-yUd_h7fOENDyWLCDm?usp=sharing](https://colab.research.google.com/drive/1JtKXPSfRBXTOu4-yUd_h7fOENDyWLCDm)) |
+| Binary classifier | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1JtKXPSfRBXTOu4-yUd_h7fOENDyWLCDm?usp=sharing) |
