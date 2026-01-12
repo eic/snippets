@@ -18,7 +18,7 @@ Put the output root files in the directories: D0_Sample and DIS_Sample
 source Run_ML_withData.sh
 ```
 
-## Tutorial for D0 Reconstruction in the ePIC experiment
+## Tutorial for D0 Reconstruction with ML in the ePIC experiment
 
 If you want to get familiar with hipe4ml, the following tutorials are available:
 
