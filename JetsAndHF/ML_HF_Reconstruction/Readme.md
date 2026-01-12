@@ -20,8 +20,7 @@ source Run_ML_withData.sh
 
 ## Tutorial for D0 Reconstruction with ML in the ePIC experiment
 
-If you want to get familiar with hipe4ml, the following tutorials are available:
-
+Please execute the notebook to run the full machine learning analysis.
 | Type | Link |
 | -------------- | ------------- |
 | Binary classifier | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1JtKXPSfRBXTOu4-yUd_h7fOENDyWLCDm?usp=sharing) |
