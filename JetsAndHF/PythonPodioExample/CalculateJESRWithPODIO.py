@@ -26,7 +26,7 @@ import numpy as np
 
 from podio.reading import get_reader
 
-# default input file
+# default input/output files
 IFileDefault = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.10.4/epic_craterlake/DIS/pythia6.428-1.0/NC/noRad/ep/10x130/q2_10to100/pythia6.428-1.0_NC_noRad_ep_10x130_q2_10to100_ab.0625.eicrecon.edm4eic.root"
 OFileDefault = "test_podio.root"
 
@@ -65,7 +65,7 @@ def Calculate(
     for iframe, frame in enumerate(reader.get("events")):
 
         # print progress
-        if (iframe % 500 == 0):
+        if (iframe % 100 == 0):
             print(f"      Processing event {iframe + 1}/{nframes}...")
 
         # grab collection of jets
