@@ -37,7 +37,7 @@ void jetReader_TTreeReader(TString infile="root://dtn-eic.jlab.org//volatile/eic
   TTreeReaderArray<int> recoPartPDG = {tree_reader, "ReconstructedChargedParticles.PDG"};
   TTreeReaderArray<float> recoPartNRG = {tree_reader, "ReconstructedChargedParticles.energy"};
 
-  // Uncomment the following two lines if using older than eic-shell --version 25.12.0-stable
+  // Uncomment the following two lines if using an eic-shell version older than 25.12.0-stable
   // Refer https://chat.epic-eic.org/main/pl/n9mbqtf4fiyptjz9q13f7m8xne
 
   //TTreeReaderArray<unsigned int> recoPartAssocRec = {tree_reader, "ReconstructedChargedParticleAssociations.recID"}; // Reco <-> MCParticle
