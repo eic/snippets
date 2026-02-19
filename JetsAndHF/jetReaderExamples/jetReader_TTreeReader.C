@@ -37,8 +37,16 @@ void jetReader_TTreeReader(TString infile="root://dtn-eic.jlab.org//volatile/eic
   TTreeReaderArray<int> recoPartPDG = {tree_reader, "ReconstructedChargedParticles.PDG"};
   TTreeReaderArray<float> recoPartNRG = {tree_reader, "ReconstructedChargedParticles.energy"};
 
-  TTreeReaderArray<unsigned int> recoPartAssocRec = {tree_reader, "ReconstructedChargedParticleAssociations.recID"}; // Reco <-> MCParticle
-  TTreeReaderArray<unsigned int> recoPartAssocSim = {tree_reader, "ReconstructedChargedParticleAssociations.simID"};
+  // Uncomment the following two lines if using older than eic-shell --version 25.12.0-stable
+  // Refer https://chat.epic-eic.org/main/pl/n9mbqtf4fiyptjz9q13f7m8xne
+
+  //TTreeReaderArray<unsigned int> recoPartAssocRec = {tree_reader, "ReconstructedChargedParticleAssociations.recID"}; // Reco <-> MCParticle
+  //TTreeReaderArray<unsigned int> recoPartAssocSim = {tree_reader, "ReconstructedChargedParticleAssociations.simID"};
+
+  // updated code after eic-shell --version 25.12.0-stable
+  TTreeReaderArray<int> recoPartAssocRec = {tree_reader, "_ReconstructedChargedParticleAssociations_rec.index"}; // Reco <-> MCParticle
+  TTreeReaderArray<int> recoPartAssocSim = {tree_reader, "_ReconstructedChargedParticleAssociations_sim.index"};
+
   TTreeReaderArray<float> recoPartAssocWeight = {tree_reader, "ReconstructedChargedParticleAssociations.weight"};
 
   // Generated Jets
