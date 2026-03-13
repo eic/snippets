@@ -1,4 +1,21 @@
-//
+#include <podio/ObjectID.h>
+#include <podio/ROOTReader.h>
+#include <podio/Frame.h>
+#include <edm4hep/Vector3f.h>
+#include <edm4hep/SimTrackerHitCollection.h>
+#include <edm4eic/TrackerHitCollection.h>
+#include <edm4eic/MCRecoTrackerHitAssociationCollection.h>
+#include <edm4eic/TrackCollection.h>
+#include <edm4eic/Measurement2DCollection.h>
+
+#include <TStyle.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TCanvas.h>
+#include <TLatex.h>
+#include <TLegend.h>
+#include <THStack.h>
+#include <TMath.h>
 
 //SimHit collections
 std::vector<std::string> sim_coll_names{
