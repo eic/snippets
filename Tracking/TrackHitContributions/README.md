@@ -24,6 +24,19 @@ The analysis code needs to be run in the container, since it uses PODIO classes.
 
 ```
 mkdir plots
+ln -sf output/output_2GeV.edm4hep.root hit_matching.input.root
 source /opt/detector/epic-main/bin/thisepic.sh
 root -l -b -q hit_matching.C 
 ```
+
+If your `compactFile` happens to include so-called 2DStrip MPGDs, you may want to boost the processing of those by supplying a geometry file:
+
+```
+ln -sf detector_geometry.2DStrip.root hit_matching.geometry.root
+```
+where the geometry file can be obtained with:
+
+```
+dd_web_display -o detector_geometry.2DStrip.root --export $DETECTOR_PATH/epic_craterlake_tracking_2DStrip.xml
+```
+
