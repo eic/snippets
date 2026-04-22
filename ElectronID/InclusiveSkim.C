@@ -1,12 +1,6 @@
 #include "preLoadLib.hh"
 
 // Data model headers
-#include "edm4eic/ReconstructedParticleCollection.h"
-#include "edm4hep/MCParticleCollection.h"
-#include "edm4hep/utils/vector_utils.h"
-#include "edm4hep/utils/kinematics.h"
-#include "edm4eic/ClusterCollection.h"
-#include "edm4eic/MCRecoParticleAssociationCollection.h"
 #include "podio/Frame.h"
 #include "podio/ROOTReader.h"
 
@@ -20,6 +14,7 @@
 // Analysis headers
 #include "InclusiveSkim.h"
 #include "ElectronID.cc"
+#include "Boost/getBoost.h"
 
 void InclusiveSkim() {
 
@@ -30,16 +25,21 @@ void InclusiveSkim() {
 	// vector<std::string> inFiles = {"pythia8NCDIS_10x100_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_1.0001.eicrecon.tree.edm4eic.root"};
 
 	// access remote file
-	vector<std::string> inFiles = {"root://dtn-rucio.jlab.org:1094//volatile/eic/EPIC/RECO/25.05.0/epic_craterlake/DIS/NC/10x100/minQ2=1/pythia8NCDIS_10x100_minQ2=1_beamEffects_xAngle=-0.025_hiDiv_1.0000.eicrecon.edm4eic.root"};
+	vector<std::string> inFiles = {"root://dtn-eic.jlab.org:1094//volatile/eic/EPIC//RECO/26.02.0/epic_craterlake/DIS/NC/18x275/minQ2=10/pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_1.0000.eicrecon.edm4eic.root"};
 
 	auto reader = podio::ROOTReader();
 	reader.openFiles(inFiles);
 
-	ElectronID* eFinder = new ElectronID(Ee, Eh);
-
 	TString outFileName = Form("inclusive_skim_%.0fx%.0fGeV.root", Ee, Eh);
 	CreateOutputTree(outFileName);
 
+	ElectronID* eFinder = new ElectronID(Ee, Eh);
+	eFinder->SetEoPMin(0.8); // set E/p cut
+	eFinder->SetIsolation(0.7, 0.9); // set isolation parameters (cone size, energy fraction)
+	eFinder->SetMinTrackPoints(4); // set number of minimum points required for a track
+
+	LorentzRotation boost = getBoost( Ee, Eh, MASS_ELECTRON, MASS_PROTON); // if you have your own boost calculation, you can replace this line.
+	eFinder->SetBoost(boost);
 
 	for(size_t ev = 0; ev < reader.getEntries("events"); ev++) {
 

@@ -11,6 +11,9 @@ void ResetVariables();
 void CalculateElectronKinematics(double fEe, double fEh, TLorentzVector kf, float& xB, float& Q2, float& W, float& y, float& nu);
 TLorentzVector GetHadronBeam(double fEh);
 
+#define MASS_ELECTRON 0.000511
+#define MASS_PROTON   0.93827
+
 using namespace std;
 
 int positive_eID;

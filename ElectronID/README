@@ -1,9 +1,4 @@
-Three example ROOT macros are provided as examples on how to include the Electron Finder in your analysis. They can also be run to get a ROOT tree with the scattered electrons. 
-
-To run any of them, modify the beam setting, input files, and the type of electronID you want in the beginning of the file. Then run the ROOT macro in eic-shell.
-
-- InclusvieSkim.C: Simple example on how to call the various functions in the electron library. Kinematics calculated using tracking and calorimeter information are also saved to the tree.
-
-- InclusiveQA.C: Simple example on saving the scattered electrons to the output tree. QA plots for the cuts applied are made.
-
-- ReconExample.C: Longer example for also testing the kinematic reconstruction using various algorithms. 
+DIS Electron Finder:
+* Example codes assume the use of eic-shell and PODIO
+* ElectronID.cc and ElectronID.hh provides a list of functions for DIS electron analysis. Use the function FindScatteredElectron() for the standard electron finding method.
+* InclusiveSkim.C is an example on how to use the ElectronFinder. This can be ran with the most updated eic-shell for simulation campaign after 25.05.
