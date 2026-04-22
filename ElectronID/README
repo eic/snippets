@@ -2,3 +2,9 @@ DIS Electron Finder:
 * Example codes assume the use of eic-shell and PODIO
 * ElectronID.cc and ElectronID.hh provides a list of functions for DIS electron analysis. Use the function FindScatteredElectron() for the standard electron finding method.
 * InclusiveSkim.C is an example on how to use the ElectronFinder. This can be ran with the most updated eic-shell for simulation campaign after 25.05.
+
+The current algorithm apply cuts as follows to select the DIS electron:
+* Particle has associated track with negative curvature (negative charge).
+* Track with momentum $p$ can be matched to ECAL cluster with compatible energy $E_\text{clus}$ such that $0.9 < E_\text{clus}/p < 1.2$.
+* Isolation of the matched ECAL cluster, such that the matched cluster constitutes more than $90~\%$ of the energy contained within an $\eta-\phi$ cone centered on the matched cluster: $E_\text{clus} / \sum (E_{\Delta R < 0.4}) > 0.9$, with $\Delta R = \sqrt{\Delta \eta^2 - \Delta \phi^2}$.
+* If more than one candidate remains after this selection, the highest pT candidate is chosen as the DIS electron.
