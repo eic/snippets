@@ -61,12 +61,16 @@ ax.xaxis.set_major_formatter(mpl.dates.DateFormatter('%Y'))
 container_bump_ix = np.nonzero(result[1:,0] != result[:-1,0])[0] + 1
 assert np.allclose(result_ixs, range(len(result_ixs)))
 for cix, ix in zip(container_bump_ix, tags_ixs[container_bump_ix]):
+    f = {
+        "Acts": np.tanh(ix / 60.),
+        "DD4hep": np.tanh(ix / 8.),
+    }[COMPONENT]
     if COMPONENT == "Acts":
-        annotate(plt.gca(), tags[ix,0], tags_dates[ix], ix, (-200 + ix, ix * 1.2 - 90))
-        annotate(plt.gca(), eic_container_tags[cix,0], eic_container_tags_dates[cix], ix, (-100 + ix, -80 + ix * 0.5))
+        annotate(plt.gca(), tags[ix,0], tags_dates[ix], ix, ((-200 + ix * 1.5) * f, (ix * 0.8 - 50) * f))
+        annotate(plt.gca(), eic_container_tags[cix,0], eic_container_tags_dates[cix], ix, ((-100 + ix) * f, (-80 + ix * 0.5) * f))
     elif COMPONENT == "DD4hep":
-        annotate(plt.gca(), tags[ix,0], tags_dates[ix], ix, (-100 + 2 * ix, ix * 2.4 - 10))
-        annotate(plt.gca(), eic_container_tags[cix,0], eic_container_tags_dates[cix], ix, (-10 + 2 * ix, -80 + ix))
+        annotate(plt.gca(), tags[ix,0], tags_dates[ix], ix, ((-100 + 2 * ix) * f, (ix * 2.4 - 10) * f))
+        annotate(plt.gca(), eic_container_tags[cix,0], eic_container_tags_dates[cix], ix, ((-10 + 2 * ix) * f, (-80 + ix) * f))
 plt.ylabel(f"{COMPONENT} version index", loc="top")
 plt.legend()
 ax.spines[['right', 'top']].set_visible(False)
