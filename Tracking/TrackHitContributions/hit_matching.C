@@ -1071,7 +1071,7 @@ bool get2DStripRZ(const string coll_name, const edm4eic::TrackerHitCollection& r
       printf("** get2DStripRZ: No access to geometry\n");
       return false;
     }
-    double lpos[3], Ur, Vr;
+    double lpos[3], Ur=0, Vr=0;
     for (int j = 0; j < 2; j++) {
       CellID recID = recIDs[j]; int pn = (recID&pStripBit) ? 0 : 1;
       double *gpos = gposPN[j]; 
@@ -1101,7 +1101,7 @@ bool get2DStripRZ(const string coll_name, const edm4eic::TrackerHitCollection& r
     }
   }
   else {                     // ***** ECT
-    double X, Y;
+    double X=0, Y=0;
     for (int j = 0; j < 2; j++) {
       CellID recID = recIDs[j]; int pn = (recID&pStripBit) ? 0 : 1;
       double *gpos = gposPN[j];
