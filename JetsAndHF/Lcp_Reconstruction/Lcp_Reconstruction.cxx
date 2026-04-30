@@ -70,11 +70,11 @@ bool debug = false;
 
 const double bField = -1.7; // Tesla
 
-void getDecayVertex_chi2fit(const int index1, const int index2, const int index3, double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr);
+void getDecayVertex_Chi2fit(const int index1, const int index2, const int index3, double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr);
 TVector3 GetDCAToPrimaryVertex(const int index, TVector3 vtx);
 
 TLorentzVector GetDCADaughters(const int index1, const int index2, const int index3, TVector3 vtx,
-  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, double *parFitErr);
+  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, float &pT_p, float &pT_k, float &pT_pi, double *parFitErr);
 
 TTreeReaderArray<float> *rcMomPx2;
 TTreeReaderArray<float> *rcMomPy2;
@@ -168,22 +168,25 @@ struct Distance2Minimization {
 
 int main(int argc, char **argv)
 {
-  if(argc!=3 && argc!=1) return 0;
+  if(argc!=6 && argc!=1) return 0;
 
   TString listname;
   TString outname;
+  TString signalmc, signal, bkg, signal_eff;
 
-  if(argc==1)
-  {
-    listname  = "test.list";
-    outname = "test.root";
+  if(argc==1){
+  listname  = "test.list";
+  outname = "test.root";
+  signal = "Signal.root";
+  bkg = "Bkg.root";
   }
-
-  if(argc==3)
-  {
-    listname = argv[1];
-    outname = argv[2];
-  }  
+  if(argc==6) { 
+  listname = argv[1]; 
+  outname = argv[2]; 
+  signal = argv[3]; 
+  bkg = argv[4]; 
+  signalmc = argv[5];
+  } 
 
   TChain *chain = new TChain("events");
 
@@ -240,14 +243,17 @@ int main(int argc, char **argv)
  TH1F *hPullVtxY = new TH1F("hPullVtxY", "Pull y position of MC vertex;(Vy_{rec}-Vy_{mc})/#sigma_{vy}; Entries (a.u.)", 1000, -10., 10.);
  TH1F *hPullVtxZ = new TH1F("hPullVtxZ", "Pull z position of MC vertex;(Vz_{rec}-Vz_{mc})/#sigma_{vz}; Entries (a.u.)", 2000, -20, 20);
  
-  TH1F *hRes_SVx_Helixfit = new TH1F("hRes_SVx_Helixfit", "Fit method: Residual of SVx; SVx_{rec}-SVx_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
-  TH1F *hRes_SVy_Helixfit= new TH1F("hRes_SVy_Helixfit", "Fit method: Residual of SVy; SVy_{rec}-SVy_{mc} (mm); Entries (a.u.)", 200, -1.0, 1.0);
-  TH1F *hRes_SVz_Helixfit = new TH1F("hRes_SVz_Helixfit", "Fit method: Residual of SVz; SVz_{rec}-SVz_{mc} (mm); Entries (a.u.)", 1000, -5.0, 5.0);
   
-  TH1F *hRes_SVx_Helixfit_pull = new TH1F("hRes_SVx_Helixfit_pull", "Fit method: Pull of SVx; SVx_{rec}-SVx_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
-  TH1F *hRes_SVy_Helixfit_pull = new TH1F("hRes_SVy_Helixfit_pull", "Fit method: Pull of SVy; SVy_{rec}-SVy_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
-  TH1F *hRes_SVz_Helixfit_pull = new TH1F("hRes_SVz_Helixfit_pull", "Fit method: Pull of SVz; SVz_{rec}-SVz_{mc}/#sigma; Entries (a.u.)", 200, -5.0, 5.0);
+  // Secondary vertex with chi2 fit method
+  TH3F *hRes_SVx_Helixfit = new TH3F("hRes_SVx_Helixfit", "Fit method: Residual of SV (X); p_{T} (GeV/c); y ; SVx_{rec}-SVx_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVy_Helixfit = new TH3F("hRes_SVy_Helixfit", "Fit method: Residual of SV (Y); p_{T} (GeV/c); y ; SVy_{rec}-SVy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVz_Helixfit = new TH3F("hRes_SVz_Helixfit", "Fit method: Residual of SV (Z); p_{T} (GeV/c); y ; SVz_{rec}-SVz_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0);   
  
+  
+  TH3F *hRes_SVx_Helixfit_pull = new TH3F("hRes_SVx_Helixfit_pull", "Fit method: Pull of SV (X); p_{T} (GeV/c); y ; SVx_{rec}-SVx_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVy_Helixfit_pull = new TH3F("hRes_SVy_Helixfit_pull", "Fit method: Pull of SV (Y); p_{T} (GeV/c); y ; SVy_{rec}-SVy_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  TH3F *hRes_SVz_Helixfit_pull = new TH3F("hRes_SVz_Helixfit_pull", "Fit method: Pull of SV (Z); p_{T} (GeV/c); y ; SVz_{rec}-SVz_{mc} (mm)", 500, 0.0, 50.0, 80, -4.0, 4.0, 1000, -5.0, 5.0); 
+  
  
  TH1F *hchi2_vtx = new TH1F("hchi2_vtx", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
  TH1F *hchi2_vtx_sig = new TH1F("hchi2_vtx_sig", "Helix Calculation: Chi2/ndf; #chi^{2}/ndf; Entries (a.u.)", 1000, 0.0, 50.0); 
@@ -341,16 +347,17 @@ TTreeReaderArray<double> mcPartMass = {treereader, "MCParticles.mass"};
 TTreeReaderArray<double> mcPartVx = {treereader, "MCParticles.vertex.x"};
 TTreeReaderArray<double> mcPartVy = {treereader, "MCParticles.vertex.y"};
 TTreeReaderArray<double> mcPartVz = {treereader, "MCParticles.vertex.z"};
-TTreeReaderArray<float> mcMomPx = {treereader, "MCParticles.momentum.x"};
-TTreeReaderArray<float> mcMomPy = {treereader, "MCParticles.momentum.y"};
-TTreeReaderArray<float> mcMomPz = {treereader, "MCParticles.momentum.z"};
+TTreeReaderArray<double> mcMomPx = {treereader, "MCParticles.momentum.x"};
+TTreeReaderArray<double> mcMomPy = {treereader, "MCParticles.momentum.y"};
+TTreeReaderArray<double> mcMomPz = {treereader, "MCParticles.momentum.z"};
 TTreeReaderArray<double> mcEndPointX = {treereader, "MCParticles.endpoint.x"};
 TTreeReaderArray<double> mcEndPointY = {treereader, "MCParticles.endpoint.y"};
 TTreeReaderArray<double> mcEndPointZ = {treereader, "MCParticles.endpoint.z"};
 
-TTreeReaderArray<unsigned int> assocChSimID = {treereader, "ReconstructedChargedParticleAssociations.simID"};
-TTreeReaderArray<unsigned int> assocChRecID = {treereader, "ReconstructedChargedParticleAssociations.recID"};
+TTreeReaderArray<int> assocChSimID = {treereader, "_ReconstructedChargedParticleAssociations_sim.index"};
+TTreeReaderArray<int> assocChRecID = {treereader, "_ReconstructedChargedParticleAssociations_rec.index"};
 TTreeReaderArray<float> assocWeight = {treereader, "ReconstructedChargedParticleAssociations.weight"};
+
 
 TTreeReaderArray<float> rcMomPx = {treereader, "ReconstructedChargedParticles.momentum.x"};
 TTreeReaderArray<float> rcMomPy = {treereader, "ReconstructedChargedParticles.momentum.y"};
@@ -386,6 +393,9 @@ TTreeReaderArray<float> CTVchi2 = {treereader, "CentralTrackVertices.chi2"};
 TTreeReaderArray<float> CTVerr_xx = {treereader, "CentralTrackVertices.positionError.xx"};
 TTreeReaderArray<float> CTVerr_yy = {treereader, "CentralTrackVertices.positionError.yy"};
 TTreeReaderArray<float> CTVerr_zz = {treereader, "CentralTrackVertices.positionError.zz"};
+TTreeReaderArray<float> incQ2 = {treereader, "InclusiveKinematicsTruth.Q2"};
+TTreeReaderArray<float> incxB = {treereader, "InclusiveKinematicsTruth.x"};
+
 
 TTreeReaderArray<int> prim_vtx_index = {treereader, "PrimaryVertices_objIdx.index"};
 
@@ -393,28 +403,22 @@ TTreeReaderArray<unsigned int> vtxAssocPart_begin = {treereader, "CentralTrackVe
 TTreeReaderArray<unsigned int> vtxAssocPart_end = {treereader, "CentralTrackVertices.associatedParticles_end"};
 TTreeReaderArray<int> vtxAssocPart_index = {treereader, "_CentralTrackVertices_associatedParticles.index"};
 
-  // File to create efficiency of D0 meson
-TFile *file_gen = new TFile("SignalLcpGen.root", "RECREATE");
-TTree *tree_gen = new TTree("treeMLSigGen", "treeMLSigGen"); 
 
-   // Define variables to store in the Ntuple
-float pt_Lcp_gen, y_Lcp_gen;
-tree_gen->Branch("pt_Lcp_gen", &pt_Lcp_gen, "pt_Lcp_gen/F");  
-tree_gen->Branch("y_Lcp_gen", &y_Lcp_gen, "y_Lcp_gen/F"); 
-
-
-    // Create a ROOT file to store the Ntuple
-TFile *file_signal = new TFile("SignalLcp.root", "RECREATE");
+// Create a ROOT file to store the Ntuple
+TFile *file_signal = new TFile(signal.Data(), "RECREATE");
 TTree *tree_sig = new TTree("treeMLSig", "treeMLSig"); 
 
   // Define variables to store in the Ntuple
-float d0_p_sig, d0_k_sig, d0_pi_sig, d0xy_p_sig, d0xy_k_sig, d0xy_pi_sig, sum_d0xy_sig, dca_12_sig, dca_Lcp_sig, decay_length_sig;
+float d0_p_sig, d0_k_sig, d0_pi_sig, pT_p_sig, pT_k_sig, pT_pi_sig, d0xy_p_sig, d0xy_k_sig, d0xy_pi_sig, sum_d0xy_sig, dca_12_sig, dca_Lcp_sig, decay_length_sig, xB_sig, Q2_sig;
 float costheta_sig, costhetaxy_sig, pt_Lcp_sig, y_Lcp_sig, mass_Lcp_sig, sigma_vtx_sig, mult_sig, chi2_sig;
 
     // Link the variables to the TTree branches
 tree_sig->Branch("d0_p", &d0_p_sig, "d0_p/F");
 tree_sig->Branch("d0_k", &d0_k_sig, "d0_k/F");
 tree_sig->Branch("d0_pi", &d0_pi_sig, "d0_pi/F"); 
+tree_sig->Branch("pT_p", &pT_p_sig, "pT_p/F");
+tree_sig->Branch("pT_k", &pT_k_sig, "pT_k/F");
+tree_sig->Branch("pT_pi", &pT_pi_sig, "pT_pi/F"); 
 tree_sig->Branch("d0xy_p", &d0xy_p_sig, "d0xy_p/F");
 tree_sig->Branch("d0xy_k", &d0xy_k_sig, "d0xy_k/F");
 tree_sig->Branch("d0xy_pi", &d0xy_pi_sig, "d0xy_pi/F");  
@@ -429,18 +433,23 @@ tree_sig->Branch("costheta", &costheta_sig, "costheta/F");
 tree_sig->Branch("costheta_xy", &costhetaxy_sig, "costheta_xy/F"); 
 tree_sig->Branch("sigma_vtx", &sigma_vtx_sig, "sigma_vtx/F"); 
 tree_sig->Branch("mult", &mult_sig, "mult/F");
-tree_sig->Branch("chi2", &chi2_sig, "chi2/F");                          
+tree_sig->Branch("chi2", &chi2_sig, "chi2/F");
+tree_sig->Branch("xB", &xB_sig, "xB/F");
+tree_sig->Branch("Q2", &Q2_sig, "Q2/F");                          
 
-TFile *file_bkg = new TFile("BkgLcp.root", "RECREATE");
+TFile *file_bkg = new TFile(bkg.Data(), "RECREATE");
 TTree *tree_bkg = new TTree("treeMLBkg", "treeMLBkg"); 
 
   // Define variables to store in the Ntuple
-float d0_p_bkg, d0_k_bkg, d0_pi_bkg, d0xy_p_bkg, d0xy_k_bkg, d0xy_pi_bkg, sum_d0xy_bkg, dca_12_bkg, dca_Lcp_bkg, decay_length_bkg;
+float d0_p_bkg, d0_k_bkg, d0_pi_bkg, pT_p_bkg, pT_k_bkg, pT_pi_bkg, d0xy_p_bkg, d0xy_k_bkg, d0xy_pi_bkg, sum_d0xy_bkg, dca_12_bkg, dca_Lcp_bkg, decay_length_bkg, xB_bkg, Q2_bkg;
 float costheta_bkg, costhetaxy_bkg, pt_Lcp_bkg, y_Lcp_bkg, mass_Lcp_bkg, sigma_vtx_bkg, mult_bkg, chi2_bkg;
   // Link the variables to the TTree branches
 tree_bkg->Branch("d0_p", &d0_p_bkg, "d0_p/F");
 tree_bkg->Branch("d0_k", &d0_k_bkg, "d0_k/F");
 tree_bkg->Branch("d0_pi", &d0_pi_bkg, "d0_pi/F");
+tree_bkg->Branch("pT_p", &pT_p_bkg, "pT_p/F");
+tree_bkg->Branch("pT_k", &pT_k_bkg, "pT_k/F");
+tree_bkg->Branch("pT_pi", &pT_pi_bkg, "pT_pi/F"); 
 tree_bkg->Branch("d0xy_p", &d0xy_p_bkg, "d0xy_p/F");
 tree_bkg->Branch("d0xy_k", &d0xy_k_bkg, "d0xy_k/F");
 tree_bkg->Branch("d0xy_pi", &d0xy_pi_bkg, "d0xy_pi/F");  
@@ -455,7 +464,23 @@ tree_bkg->Branch("costheta", &costheta_bkg, "costheta/F");
 tree_bkg->Branch("costheta_xy", &costhetaxy_bkg, "costheta_xy/F"); 
 tree_bkg->Branch("sigma_vtx", &sigma_vtx_bkg, "sigma_vtx/F"); 
 tree_bkg->Branch("mult", &mult_bkg, "mult/F");
-tree_bkg->Branch("chi2", &chi2_bkg, "chi2/F");                                        
+tree_bkg->Branch("chi2", &chi2_bkg, "chi2/F"); 
+tree_bkg->Branch("xB", &xB_bkg, "xB/F"); 
+tree_bkg->Branch("Q2", &Q2_bkg, "Q2/F"); 
+
+ TFile *fout_mcgen = new TFile(signalmc.Data(),"RECREATE");
+ TTree *tree_Lcp = new TTree("LcTree","Lc Baryon Kinematics");
+
+  float Lcp_px, Lcp_py, Lcp_pz;
+  float Lcp_pt, Lcp_eta, Lcp_y, Lcp_mass;
+
+  tree_Lcp->Branch("px",&Lcp_px,"px/F");
+  tree_Lcp->Branch("py",&Lcp_py,"py/F");
+  tree_Lcp->Branch("pz",&Lcp_pz,"pz/F");
+  tree_Lcp->Branch("pt",&Lcp_pt,"pt/F");
+  tree_Lcp->Branch("eta",&Lcp_eta,"eta/F");
+  tree_Lcp->Branch("rapidity",&Lcp_y,"rapidity/F");
+  tree_Lcp->Branch("mass",&Lcp_mass,"mass/F");                                     
 
 
 int nevents = 0;
@@ -463,8 +488,14 @@ int count = 0;
 
 while(treereader.Next())
 {
-  if(nevents%1000==0) printf("\nEvent No.-----> %d\n",nevents);
+  //if(nevents%1000==0) printf("\nEvent No.-----> %d\n",nevents);
   // find MC primary vertex
+  float Q2_mc = -1000.;
+  float xB_mc = -1000.;
+  if (incQ2.GetSize()>0){
+  Q2_mc = incQ2[0];
+  xB_mc = incxB[0];
+  }
   int nMCPart = mcPartMass.GetSize();
 
   TVector3 vertex_mc(-999., -999., -999.);
@@ -613,6 +644,21 @@ for(int imc=0; imc<nMCPart; imc++)
 {
  if(fabs(mcPartPdg[imc]) != pdg_Lcp) continue;
  hEventStat->Fill(1.5);
+// Fill Lcp gen tree with properties
+ TLorentzVector Lcp_vec;
+
+ Lcp_px   = mcMomPx[imc];
+ Lcp_py   = mcMomPy[imc];
+ Lcp_pz   = mcMomPz[imc];
+ Lcp_mass = mcPartMass[imc];
+
+ Lcp_vec.SetXYZM(Lcp_px, Lcp_py, Lcp_pz, Lcp_mass);
+
+ Lcp_pt  = Lcp_vec.Pt();
+ Lcp_eta = Lcp_vec.Eta();
+ Lcp_y   = Lcp_vec.Rapidity();
+
+ tree_Lcp->Fill();
 
   // printf("MC Particle (Momentum) = (%f, %f, %f) \n",mcMomPx[imc], mcMomPy[imc], mcMomPz[imc]);		  	
  int nDaughters = mcPartDaughter_end[imc]-mcPartDaughter_begin[imc];
@@ -640,9 +686,6 @@ for(int imc=0; imc<nMCPart; imc++)
  // Fill the momentum at Gen level Aug3, 2025
  float mcRap_gen = mc_part_gen.Rapidity();
  float mcPt_gen = mc_part_gen.Pt();  
- pt_Lcp_gen = mcPt_gen;
- y_Lcp_gen = mcRap_gen;
- tree_gen->Fill();
 
  hEventStat->Fill(2.5);
 
@@ -724,7 +767,7 @@ for(int imc=0; imc<nMCPart; imc++)
 
       // Get reconstructed protons, kaons and pions
       hNRecoVtx->Fill(CTVx.GetSize());
-      const int pid_mode = 0; // 0 - truth; 1 - realistic
+      const int pid_mode = 1; // 0 - truth; 1 - realistic
       vector<unsigned int> p_index;
       vector<unsigned int> k_index;      
       vector<unsigned int> pi_index;
@@ -788,19 +831,20 @@ for(int imc=0; imc<nMCPart; imc++)
          }
        }
 
-       float dcaDaughters[3], cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx;
+       float dcaDaughters[3], cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx, pT_p, pT_k, pT_pi;
        float chi2_ndf = 0.;
-       TVector3 decayVertex;
        double err_Par[6];  // or whatever size is appropriate
-       TLorentzVector parent = GetDCADaughters(p_index[i], k_index[j], pi_index[k], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx, chi2_ndf, decayVertex,err_Par);
+
+       TVector3 decayVertex;
+       TLorentzVector parent = GetDCADaughters(p_index[i], k_index[j], pi_index[k], vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx, chi2_ndf, decayVertex, pT_p, pT_k, pT_pi, err_Par);
 		   hchi2_vtx->Fill(chi2_ndf);
 
        if(is_Lcp_pkpi)
        {
         hEventStat->Fill(3.5);
         hchi2_vtx_sig->Fill(chi2_ndf);
-		   TVector3 MCVertex_Kaon(mcPartVx[mc_index_k], mcPartVy[mc_index_k], mcPartVz[mc_index_k]);
-		   TVector3 MCVertex_Pion(mcPartVx[mc_index_pi], mcPartVy[mc_index_pi], mcPartVz[mc_index_pi]);
+		    TVector3 MCVertex_Kaon(mcPartVx[mc_index_k], mcPartVy[mc_index_k], mcPartVz[mc_index_k]);
+		    TVector3 MCVertex_Pion(mcPartVx[mc_index_pi], mcPartVy[mc_index_pi], mcPartVz[mc_index_pi]);
 		   
 		 //  printf("Signal MC Vertex Kaon = (%f, %f, %f)\n",MCVertex_Kaon.X(), MCVertex_Kaon.Y(), MCVertex_Kaon.Z());	 	
 		  // printf("Signal MC Vertex Pion = (%f, %f, %f)\n",MCVertex_Pion.X(), MCVertex_Pion.Y(), MCVertex_Pion.Z());
@@ -808,13 +852,13 @@ for(int imc=0; imc<nMCPart; imc++)
 		  // cout<<"Signal MC Vertex Kaon (cm): "<<MCVertex_Kaon.X()*0.1<<"\t"<<MCVertex_Kaon.Y()*0.1<<"\t"<<MCVertex_Kaon.Z()*0.1<<endl;
 		  // cout<<"Signal MC Vertex Pion (cm): "<<MCVertex_Pion.X()*0.1<<"\t"<<MCVertex_Pion.Y()*0.1<<"\t"<<MCVertex_Pion.Z()*0.1<<endl; 
 		   
-		   	 hRes_SVx_Helixfit->Fill((decayVertex.X()-MCVertex_Kaon.X()*0.1)*10);
-		      hRes_SVy_Helixfit->Fill((decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
-		      hRes_SVz_Helixfit->Fill((decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);	
-		      
-		      hRes_SVx_Helixfit_pull->Fill(((decayVertex.X()-MCVertex_Kaon.X()*0.1))/err_Par[0]);
-		      hRes_SVy_Helixfit_pull->Fill(((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/err_Par[1]);
-		      hRes_SVz_Helixfit_pull->Fill(((decayVertex.Z()-MCVertex_Kaon.Z()*0.1))/err_Par[2]);
+        hRes_SVx_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.X()-MCVertex_Kaon.X()*0.1)*10);
+        hRes_SVy_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.Y()-MCVertex_Kaon.Y()*0.1)*10);
+        hRes_SVz_Helixfit->Fill(parent.Pt(), parent.Rapidity(), (decayVertex.Z()-MCVertex_Kaon.Z()*0.1)*10);  
+
+        hRes_SVx_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.X()-MCVertex_Kaon.X()*0.1))/(err_Par[0]));
+        hRes_SVy_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.Y()-MCVertex_Kaon.Y()*0.1))/(err_Par[1]));
+        hRes_SVz_Helixfit_pull->Fill(parent.Pt(), parent.Rapidity(), ((decayVertex.Z()-MCVertex_Kaon.Z()*0.1))/(err_Par[2])); 
         		      
         if (q_proton == 1 && q_kaon == -1 && q_pion == 1)
         hEventStat->Fill(4.5);   // Λc⁺
@@ -833,7 +877,10 @@ for(int imc=0; imc<nMCPart; imc++)
                 // Toplogical Variables for Signal
       d0_p_sig = dcaToVtx_p.Mag();
       d0_k_sig = dcaToVtx_k.Mag();
-      d0_pi_sig = dcaToVtx_pi.Mag();		      
+      d0_pi_sig = dcaToVtx_pi.Mag();
+      pT_p_sig = 	pT_p;	
+      pT_k_sig =  pT_k; 
+      pT_pi_sig =  pT_pi; 
       d0xy_p_sig = dcaToVtx_p.Perp();
       d0xy_k_sig = dcaToVtx_k.Perp();
       d0xy_pi_sig = dcaToVtx_pi.Perp();		      
@@ -866,10 +913,13 @@ for(int imc=0; imc<nMCPart; imc++)
 		      //printf("Bkg: dca12 = %2.4f, cosTheta = %2.4f, D0dca = %2.4f, decay = %2.4f\n", dcaDaughters, cosTheta, V0DcaToVtx, decayLength);
       h3InvMass[1][0]->Fill(parent.Pt(), parent.Rapidity(), parent.M());
 
-		      // Toplogical Variables for Bkg
+		  // Toplogical Variables for Bkg
       d0_p_bkg = dcaToVtx_p.Mag();
       d0_k_bkg = dcaToVtx_k.Mag();
-      d0_pi_bkg = dcaToVtx_pi.Mag();		      
+      d0_pi_bkg = dcaToVtx_pi.Mag();	
+      pT_p_bkg =  pT_p; 
+      pT_k_bkg =  pT_k; 
+      pT_pi_bkg =  pT_pi; 	      
       d0xy_p_bkg = dcaToVtx_p.Perp();
       d0xy_k_bkg = dcaToVtx_k.Perp();
       d0xy_pi_bkg = dcaToVtx_pi.Perp();		      
@@ -897,10 +947,6 @@ nevents++;
 }
 
 
-file_gen->cd();  
-tree_gen->Write();
-file_gen->Close();
-
 file_signal->cd();  
 tree_sig->Write();
 file_signal->Close();  
@@ -908,6 +954,10 @@ file_signal->Close();
 file_bkg->cd();  
 tree_bkg->Write();
 file_bkg->Close(); 
+
+fout_mcgen->cd();
+tree_Lcp->Write();
+fout_mcgen->Close();
 
 TFile *outfile = new TFile(outname.Data(), "recreate");
 hEventStat->SetMarkerSize(2);
@@ -931,8 +981,9 @@ hRes_SVx_Helixfit->Write();
 hRes_SVy_Helixfit->Write();
 hRes_SVz_Helixfit->Write();
 hRes_SVx_Helixfit_pull->Write();
-hRes_SVy_Helixfit_pull->Write(); 
-hRes_SVz_Helixfit_pull->Write(); 
+hRes_SVy_Helixfit_pull->Write();
+hRes_SVz_Helixfit_pull->Write();
+
 hMCLcpPtRap->Write();
 hMcPPtEta->Write();
 hMcPPtEtaReco->Write();
@@ -1007,7 +1058,7 @@ TVector3 GetDCAToPrimaryVertex(const int index, TVector3 vtx)
 // Local to global conversion 
 // x = - l0 Sin (phi), y = l0 Cos (phi), z = l1 
 TLorentzVector GetDCADaughters(const int index1, const int index2, const int index3, TVector3 vtx,
-  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, double *parFitErr)
+  float *dcaDaughters, float &cosTheta, float &cosTheta_xy, float &decayLength, float &V0DcaToVtx, float &sigma_vtx, float & chi2_ndf, TVector3 &decayVertex, float &pT_p, float &pT_k, float &pT_pi, double *parFitErr)
 {
   // -- get helix
   TVector3 pos1(rcTrkLoca2->At(index1) * sin(rcTrkPhi2->At(index1)) * -1 * millimeter, rcTrkLoca2->At(index1) * cos(rcTrkPhi2->At(index1)) * millimeter, rcTrkLocb2->At(index1) * millimeter);
@@ -1032,14 +1083,13 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
   // Decay vertex with distance minimization
   double s1, s2, s3;
   
-  getDecayVertex_chi2fit(index1,index2,index3,s1,s2,s3,decayVertex,chi2_ndf, parFitErr);
+  getDecayVertex_Chi2fit(index1,index2,index3,s1,s2,s3,decayVertex,chi2_ndf, parFitErr);
   
   // Points of closest approach among three helices
   TVector3 const p1 = p1Helix.at(s1);
   TVector3 const p2 = p2Helix.at(s2);
   TVector3 const p3 = p3Helix.at(s3);
-
-  printf("Chi2/ndf = %f \n",chi2_ndf);
+//  printf("Chi2/ndf = %f \n",chi2_ndf);
  // Three dcaDaughters; dcaDaughters_12, dcaDaughters_23, dcaDaughters_13
   dcaDaughters[0] = (p1 - p2).Mag()/millimeter;
   dcaDaughters[1] = (p2 - p3).Mag()/millimeter;
@@ -1049,6 +1099,7 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
   TVector3 const p1MomAtDca = p1Helix.momentumAt(s1,  bField * tesla);  
   TVector3 const p2MomAtDca = p2Helix.momentumAt(s2,  bField * tesla); 
   TVector3 const p3MomAtDca = p3Helix.momentumAt(s3,  bField * tesla);
+  pT_p = p1MomAtDca.Pt();   pT_k = p2MomAtDca.Pt();   pT_pi = p3MomAtDca.Pt();
   
   TLorentzVector p1FourMom(p1MomAtDca, sqrt(p1MomAtDca.Mag2()+gProtonMass*gProtonMass));
   TLorentzVector p2FourMom(p2MomAtDca, sqrt(p2MomAtDca.Mag2()+gKaonMass*gKaonMass));
@@ -1081,7 +1132,7 @@ TLorentzVector GetDCADaughters(const int index1, const int index2, const int ind
   return parent;
 }
 
-void getDecayVertex_chi2fit(const int index1, const int index2, const int index3,  double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr)
+void getDecayVertex_Chi2fit(const int index1, const int index2, const int index3,  double &s1, double &s2, double &s3, TVector3 &vertex, float &chi2, double *parFitErr)
 {
     TVector3 pos1(rcTrkLoca2->At(index1) * sin(rcTrkPhi2->At(index1)) * -1 * millimeter,
                   rcTrkLoca2->At(index1) * cos(rcTrkPhi2->At(index1)) * millimeter,
@@ -1116,8 +1167,6 @@ void getDecayVertex_chi2fit(const int index1, const int index2, const int index3
     TVector3 const p1_init = helix1.at(ss12.first);
     TVector3 const p2_init = helix2.at(ss12.second); 
     TVector3 const p3_init = helix3.at(ss13.second);
-    TVector3 const centroid = 1./3*(p1_init+p2_init+p3_init); 
-    
     std::array<float, 21>& fcov1 = rcTrkCov->At(index1);
     std::array<float, 21>& fcov2 = rcTrkCov->At(index2); 
     std::array<float, 21>& fcov3 = rcTrkCov->At(index3);  
@@ -1128,7 +1177,8 @@ void getDecayVertex_chi2fit(const int index1, const int index2, const int index3
     ROOT::Math::Functor fcn(d2Function,nPar); // 5 parameters
     ROOT::Fit::Fitter fitter;
 
-    double pStart[nPar] = {centroid.X(),centroid.Y(),centroid.Z(),ss12.first,ss12.second,ss13.second};
+    double x0 =1./3*(p1_init.X() + p2_init.X()+ p3_init.X()); double y0 =1./3*(p1_init.Y() + p2_init.Y() + p3_init.Y()); double z0 =1./3*(p1_init.Z() + p2_init.Z() + p3_init.Z());  
+    double pStart[nPar] = {x0,y0,z0,ss12.first,ss12.second,ss13.second};
     fitter.SetFCN(fcn, pStart,nPar,1);
     fitter.Config().ParSettings(0).SetName("x0");
     fitter.Config().ParSettings(0).SetStepSize(0.01);
@@ -1177,13 +1227,12 @@ void getDecayVertex_chi2fit(const int index1, const int index2, const int index3
   // result.GetCovarianceMatrix(covMatrix); // Matrix for the parameter errors
   // covMatrix.Print();
    
-   const double * parFit = result.GetParams();
+   const double *parFit = result.GetParams();
    const double *FitErr = result.GetErrors();
+    
    for (int i = 0; i < nPar; ++i) parFitErr[i] = FitErr[i];
-
     vertex.SetXYZ(parFit[0], parFit[1], parFit[2]);
-	s1 = parFit[3]; s2 = parFit[4]; s3 = parFit[5];
-
+    s1 = parFit[3]; s2 = parFit[4]; s3 = parFit[5];
 
 }
 
