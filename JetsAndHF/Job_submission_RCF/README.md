@@ -3,8 +3,8 @@ This respository hosts scripts and macros for illustrating how to submit batch j
 Here are the steps
 * Log into your EIC account on RCF
 * Clone this respository
-* Optional: prepare file lists for the simulation campaign you want to analyze
-  * Use ```input_files/prep_file_list.sh```
+* Prepare file lists for the simulation campaign you want to analyze
+  * Use ```[input_files/prep_file_list.sh](https://github.com/eic/snippets/blob/main/JetsAndHF/SecondaryVertex_Chi2/Prepare_file_ep.sh)```
   * Remember to modify the script to fetch the simulation files you want
 * Submit jobs
   * This needs to be done outside of eic-shell
