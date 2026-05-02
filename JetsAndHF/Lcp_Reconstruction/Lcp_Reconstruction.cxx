@@ -896,6 +896,8 @@ for(int imc=0; imc<nMCPart; imc++)
       sigma_vtx_sig = sigma_vtx;
       mult_sig = nMcPart;
       chi2_sig = chi2_ndf;
+      xB_sig = xB_mc;
+      Q2_sig = Q2_mc;
       tree_sig->Fill();  
 
     }
@@ -935,6 +937,8 @@ for(int imc=0; imc<nMCPart; imc++)
       sigma_vtx_bkg = sigma_vtx;
       mult_bkg = nMcPart;
       chi2_bkg = chi2_ndf;
+      xB_bkg = xB_mc;          
+      Q2_bkg = Q2_mc;
       tree_bkg->Fill();
     } 
 
