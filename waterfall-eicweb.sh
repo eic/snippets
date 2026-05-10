@@ -155,6 +155,39 @@ upload_to_pages() {
     echo "Trace uploaded successfully."
     echo "Launcher URL: ${_launcher_url}"
 
+    # Update traces/index.json so the default listing page stays current
+    echo "Updating trace index..."
+    _now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    _index_api="https://api.github.com/repos/eic/perfetto-launcher/contents/traces/index.json"
+    _index_meta=$(curl -sS -H "Authorization: token ${GITHUB_PAGES_TOKEN}" "$_index_api")
+    _index_sha=$(echo "$_index_meta" | python3 -c \
+        "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || true)
+    _new_index=$(echo "$_index_meta" | python3 - << PYEOF
+import sys, json, base64
+resp = json.load(sys.stdin)
+if 'content' in resp:
+    data = json.loads(base64.b64decode(resp['content']))
+else:
+    data = {'traces': []}
+data.setdefault('traces', [])
+new_entry = {'path': '${_dest}', 'uploaded_at': '${_now}', 'pipeline_id': '${_pipeline}'}
+data['traces'] = [new_entry] + data['traces']
+data['traces'] = data['traces'][:50]
+print(json.dumps(data, indent=2))
+PYEOF
+)
+    _index_content=$(echo "$_new_index" | base64 -w0 2>/dev/null || echo "$_new_index" | base64 | tr -d '\n')
+    if [ -n "$_index_sha" ]; then
+        _index_body="{\"message\":\"Update trace index for pipeline ${_pipeline}\",\"content\":\"${_index_content}\",\"sha\":\"${_index_sha}\"}"
+    else
+        _index_body="{\"message\":\"Update trace index for pipeline ${_pipeline}\",\"content\":\"${_index_content}\"}"
+    fi
+    curl -sS -X PUT \
+        -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
+        -H "Content-Type: application/json" \
+        "$_index_api" \
+        -d "$_index_body" > /dev/null && echo "Index updated." || echo "WARNING: index update failed" >&2
+
     if [ -t 1 ]; then
         case "$(uname)" in
             Darwin) open "$_launcher_url" ;;
