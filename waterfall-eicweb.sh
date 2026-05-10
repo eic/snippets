@@ -94,7 +94,7 @@ upload_to_pages() {
         | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || true)
 
     # Build the JSON body with Python to avoid shell "Argument list too long" on large traces
-    _body_file=$(mktemp /tmp/gh_upload_XXXXXX.json)
+    _body_file=$(mktemp /tmp/gh_upload_XXXXXX)
     python3 - << PYEOF
 import json, base64
 with open('trace.json', 'rb') as f:
