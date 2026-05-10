@@ -79,6 +79,7 @@ echo "Now upload trace.json to https://ui.perfetto.dev"
 open_in_perfetto() {
     _port=$(python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
     _pyserver=$(mktemp /tmp/cors_server_XXXXXX.py)
+    # The server runs with no stdin reads; the shell controls shutdown via kill
     cat > "$_pyserver" << 'PYEOF'
 import http.server, sys, threading
 
@@ -91,14 +92,12 @@ class CORSHandler(http.server.SimpleHTTPRequestHandler):
 
 port = int(sys.argv[1])
 server = http.server.HTTPServer(('127.0.0.1', port), CORSHandler)
-t = threading.Thread(target=server.serve_forever)
-t.daemon = True
-t.start()
-input()
-server.shutdown()
+server.serve_forever()
 PYEOF
     python3 "$_pyserver" "$_port" &
     _server_pid=$!
+    # Ensure cleanup even on Ctrl-C or unexpected exit
+    trap 'kill "$_server_pid" 2>/dev/null; rm -f "$_pyserver"' EXIT INT TERM
     _launch_url="https://ui.perfetto.dev/#!/?url=http://localhost:${_port}/trace.json"
     echo "Opening: $_launch_url"
     case "$(uname)" in
@@ -110,6 +109,7 @@ PYEOF
     read _dummy
     kill "$_server_pid" 2>/dev/null
     rm -f "$_pyserver"
+    trap - EXIT INT TERM
 }
 
 # Upload trace to eic/perfetto-launcher GitHub Pages and print the launcher URL
@@ -124,12 +124,26 @@ upload_to_pages() {
     fi
 
     echo "Uploading trace to eic/perfetto-launcher as ${_dest}..."
-    _content=$(base64 -w0 trace.json 2>/dev/null || base64 trace.json)
+    # base64: GNU uses -w0, BSD uses no wrapping flag but pipes through tr
+    _content=$(base64 -w0 trace.json 2>/dev/null || base64 trace.json | tr -d '\n')
+
+    # Fetch existing file sha if it exists (needed for updates via GitHub Contents API)
+    _sha=$(curl -sS \
+        -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
+        "https://api.github.com/repos/eic/perfetto-launcher/contents/${_dest}" \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || true)
+
+    if [ -n "$_sha" ]; then
+        _body="{\"message\":\"Update trace for pipeline ${_pipeline}\",\"content\":\"${_content}\",\"sha\":\"${_sha}\"}"
+    else
+        _body="{\"message\":\"Add trace for pipeline ${_pipeline}\",\"content\":\"${_content}\"}"
+    fi
+
     _response=$(curl -sS -X PUT \
         -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
         -H "Content-Type: application/json" \
         "https://api.github.com/repos/eic/perfetto-launcher/contents/${_dest}" \
-        -d "{\"message\":\"Add trace for pipeline ${_pipeline}\",\"content\":\"${_content}\"}" \
+        -d "$_body" \
         -w "\n%{http_code}")
     _http_code=$(echo "$_response" | tail -1)
     if [ "$_http_code" != "201" ] && [ "$_http_code" != "200" ]; then
@@ -149,7 +163,11 @@ upload_to_pages() {
     fi
 }
 
-if [ "$OPEN" = "1" ]; then
+if [ "$OPEN" = "1" ] && [ "$PAGES" = "1" ]; then
+    echo "ERROR: --open and --pages are mutually exclusive" >&2
+    usage
+    exit 1
+elif [ "$OPEN" = "1" ]; then
     open_in_perfetto
 elif [ "$PAGES" = "1" ]; then
     upload_to_pages "$pipeline"
