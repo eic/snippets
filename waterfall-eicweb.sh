@@ -60,6 +60,7 @@ fetch_pipeline() {
 
 }
 
+main_pipeline="$pipeline"
 echo "Fetching main pipeline"
 fetch_pipeline "$project:$pipeline"
 
@@ -137,5 +138,5 @@ PYEOF
 }
 
 if [ "$PAGES" = "1" ]; then
-    upload_to_pages "$pipeline"
+    upload_to_pages "$main_pipeline"
 fi
