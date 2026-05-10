@@ -164,47 +164,7 @@ PYEOF
 
     echo "Trace uploaded successfully."
     echo "Launcher URL: ${_launcher_url}"
-
-    # Update traces/index.json so the default listing page stays current
-    echo "Updating trace index..."
-    _now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-    _index_api="https://api.github.com/repos/eic/perfetto-launcher/contents/traces/index.json"
-    _index_meta_file=$(mktemp /tmp/gh_meta_XXXXXX.json)
-    curl -sS -H "Authorization: token ${GITHUB_PAGES_TOKEN}" "$_index_api" > "$_index_meta_file"
-    _index_body_file=$(mktemp /tmp/gh_index_XXXXXX.json)
-    # Use a file for the API response rather than a pipe: pipe + heredoc both
-    # claim stdin, and the heredoc wins, leaving Python with no JSON to parse.
-    python3 - << PYEOF
-import json, base64
-with open('${_index_meta_file}') as f:
-    resp = json.load(f)
-if 'content' in resp:
-    data = json.loads(base64.b64decode(resp['content']))
-    sha = resp.get('sha', '')
-else:
-    data = {'traces': []}
-    sha = ''
-data.setdefault('traces', [])
-new_entry = {'path': '${_dest}', 'uploaded_at': '${_now}', 'pipeline_id': '${_pipeline}'}
-data['traces'] = [new_entry] + data['traces']
-data['traces'] = data['traces'][:50]
-body = {
-    'message': 'Update trace index for pipeline ${_pipeline}',
-    'content': base64.b64encode(json.dumps(data, indent=2).encode()).decode(),
-}
-if sha:
-    body['sha'] = sha
-with open('${_index_body_file}', 'w') as out:
-    json.dump(body, out)
-PYEOF
-    rm -f "$_index_meta_file"
-    curl -sS -X PUT \
-        -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
-        -H "Content-Type: application/json" \
-        "$_index_api" \
-        -d "@${_index_body_file}" > /dev/null \
-        && echo "Index updated." || echo "WARNING: index update failed" >&2
-    rm -f "$_index_body_file"
+    echo "(traces/index.json is regenerated automatically by the deploy workflow)"
 
     if [ -t 1 ]; then
         case "$(uname)" in
