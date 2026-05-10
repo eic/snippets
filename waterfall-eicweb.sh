@@ -124,8 +124,6 @@ upload_to_pages() {
     fi
 
     echo "Uploading trace to eic/perfetto-launcher as ${_dest}..."
-    # base64: GNU uses -w0, BSD uses no wrapping flag but pipes through tr
-    _content=$(base64 -w0 trace.json 2>/dev/null || base64 trace.json | tr -d '\n')
 
     # Fetch existing file sha if it exists (needed for updates via GitHub Contents API)
     _sha=$(curl -sS \
@@ -133,18 +131,30 @@ upload_to_pages() {
         "https://api.github.com/repos/eic/perfetto-launcher/contents/${_dest}" \
         | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || true)
 
-    if [ -n "$_sha" ]; then
-        _body="{\"message\":\"Update trace for pipeline ${_pipeline}\",\"content\":\"${_content}\",\"sha\":\"${_sha}\"}"
-    else
-        _body="{\"message\":\"Add trace for pipeline ${_pipeline}\",\"content\":\"${_content}\"}"
-    fi
+    # Build the JSON body with Python to avoid shell "Argument list too long" on large traces
+    _body_file=$(mktemp /tmp/gh_upload_XXXXXX.json)
+    python3 - << PYEOF
+import json, base64
+with open('trace.json', 'rb') as f:
+    content = base64.b64encode(f.read()).decode()
+sha = '${_sha}'
+body = {
+    'message': ('Update' if sha else 'Add') + ' trace for pipeline ${_pipeline}',
+    'content': content,
+}
+if sha:
+    body['sha'] = sha
+with open('${_body_file}', 'w') as out:
+    json.dump(body, out)
+PYEOF
 
     _response=$(curl -sS -X PUT \
         -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
         -H "Content-Type: application/json" \
         "https://api.github.com/repos/eic/perfetto-launcher/contents/${_dest}" \
-        -d "$_body" \
+        -d "@${_body_file}" \
         -w "\n%{http_code}")
+    rm -f "$_body_file"
     _http_code=$(echo "$_response" | tail -1)
     if [ "$_http_code" != "201" ] && [ "$_http_code" != "200" ]; then
         echo "ERROR: GitHub API returned HTTP ${_http_code}" >&2
@@ -160,33 +170,36 @@ upload_to_pages() {
     _now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     _index_api="https://api.github.com/repos/eic/perfetto-launcher/contents/traces/index.json"
     _index_meta=$(curl -sS -H "Authorization: token ${GITHUB_PAGES_TOKEN}" "$_index_api")
-    _index_sha=$(echo "$_index_meta" | python3 -c \
-        "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || true)
-    _new_index=$(echo "$_index_meta" | python3 - << PYEOF
+    _index_body_file=$(mktemp /tmp/gh_index_XXXXXX.json)
+    echo "$_index_meta" | python3 - << PYEOF
 import sys, json, base64
 resp = json.load(sys.stdin)
 if 'content' in resp:
     data = json.loads(base64.b64decode(resp['content']))
+    sha = resp.get('sha', '')
 else:
     data = {'traces': []}
+    sha = ''
 data.setdefault('traces', [])
 new_entry = {'path': '${_dest}', 'uploaded_at': '${_now}', 'pipeline_id': '${_pipeline}'}
 data['traces'] = [new_entry] + data['traces']
 data['traces'] = data['traces'][:50]
-print(json.dumps(data, indent=2))
+body = {
+    'message': 'Update trace index for pipeline ${_pipeline}',
+    'content': base64.b64encode(json.dumps(data, indent=2).encode()).decode(),
+}
+if sha:
+    body['sha'] = sha
+with open('${_index_body_file}', 'w') as out:
+    json.dump(body, out)
 PYEOF
-)
-    _index_content=$(echo "$_new_index" | base64 -w0 2>/dev/null || echo "$_new_index" | base64 | tr -d '\n')
-    if [ -n "$_index_sha" ]; then
-        _index_body="{\"message\":\"Update trace index for pipeline ${_pipeline}\",\"content\":\"${_index_content}\",\"sha\":\"${_index_sha}\"}"
-    else
-        _index_body="{\"message\":\"Update trace index for pipeline ${_pipeline}\",\"content\":\"${_index_content}\"}"
-    fi
     curl -sS -X PUT \
         -H "Authorization: token ${GITHUB_PAGES_TOKEN}" \
         -H "Content-Type: application/json" \
         "$_index_api" \
-        -d "$_index_body" > /dev/null && echo "Index updated." || echo "WARNING: index update failed" >&2
+        -d "@${_index_body_file}" > /dev/null \
+        && echo "Index updated." || echo "WARNING: index update failed" >&2
+    rm -f "$_index_body_file"
 
     if [ -t 1 ]; then
         case "$(uname)" in
