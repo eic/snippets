@@ -28,6 +28,10 @@ def check_rucio_did(path, campaign):
     if not suffix:
         return '', []
 
+    # Special handling for UPSILON_ABCONV - check at file level
+    if '/EXCLUSIVE/UPSILON_ABCONV/' in path:
+        return check_upsilon_abconv(path, campaign)
+
     # Construct rucio DID pattern
     did_pattern = f"epic:/RECO*{campaign}*/{suffix}"
 
@@ -51,6 +55,76 @@ def check_rucio_did(path, campaign):
         return '', []
     except Exception as e:
         print(f"Error checking {did_pattern}: {e}", file=sys.stderr)
+        return '', []
+
+
+def check_upsilon_abconv(path, campaign):
+    """Special handling for UPSILON_ABCONV datasets at file level.
+
+    Args:
+        path: Path like /volatile/eic/EPIC/EVGEN/EXCLUSIVE/UPSILON_ABCONV/upsilon1s_threshold_ab_hiAcc_10x100.hepmc3.tree.root
+        campaign: Campaign version like "26.04"
+
+    Returns:
+        Tuple of (availability_marker, list_of_dids)
+    """
+    import os
+
+    # Extract filename from path
+    filename = os.path.basename(path)
+    # Remove .hepmc3.tree.root extension to get base name
+    if not filename.endswith('.hepmc3.tree.root'):
+        return '', []
+
+    base_name = filename.replace('.hepmc3.tree.root', '')
+
+    # Find container DIDs for this campaign
+    container_pattern = f"epic:*{campaign}*/EXCLUSIVE/UPSILON_ABCONV"
+
+    try:
+        result = subprocess.run(
+            ['/opt/local/bin/rucio', 'did', 'list', '--short', container_pattern],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        containers = []
+        for line in result.stdout.strip().split('\n'):
+            line = line.strip()
+            if line and line.startswith('epic:/RECO/'):
+                containers.append(line)
+
+        if not containers:
+            return '', []
+
+        # Check file contents of each container
+        matching_files = []
+        for container in containers:
+            try:
+                content_result = subprocess.run(
+                    ['/opt/local/bin/rucio', 'did', 'content', 'list', '--short', container],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+
+                for file_line in content_result.stdout.strip().split('\n'):
+                    file_line = file_line.strip()
+                    # Check if this file matches our base name
+                    if base_name in file_line and file_line.endswith('.eicrecon.edm4eic.root'):
+                        matching_files.append(file_line)
+
+            except Exception as e:
+                print(f"Error checking container {container}: {e}", file=sys.stderr)
+                continue
+
+        if matching_files:
+            return 'X', matching_files
+        return '', []
+
+    except Exception as e:
+        print(f"Error checking UPSILON_ABCONV pattern {container_pattern}: {e}", file=sys.stderr)
         return '', []
 
 def main():
