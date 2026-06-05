@@ -449,7 +449,7 @@ if __name__ == "__main__":
     mom_list = [0.5, 1, 2, 5, 10, 15]
     eta_list = [-3.5,-3.0,-2.5,-1.0,1.0,2.5,3.0,3.5]
     setting="default"
-    nev=5000
+    nev=10000
     dirname = "input/"
     for mom in mom_list:
         for ii in np.arange(len(eta_list)-1):
