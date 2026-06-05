@@ -134,28 +134,28 @@ def plot_resol(varname="ph",resol_file="resol_out_slices.txt", dir_path="./", se
     eta_hi_pwg = [-3.0,   -2.5,  -1.0,    1.0,   2.5,    3.0  ,  3.5]  
 
     if varname  == "th":
-        y_hi     = 0.01
+        y_hi     = 0.008
         yname    = r"$\theta$ [rad]"
-        xname    = "momentum [GeV]"
+        xname    = "momentum [GeV/c]"
         x_hi      = [20,20,20,20,20,20,20]
 
     elif varname  == "ph":
-        y_hi     = 0.01
+        y_hi     = 0.014
         yname    = r"$\phi$ [rad]"
-        xname    = "momentum [GeV]"
+        xname    = "momentum [GeV/c]"
         x_hi      = [20,20,20,20,20,20,20]
 
     elif varname  == "dp":
         y_hi     = 12
         yname    = r"$\delta p/p$ [%]"
         xname    = "momentum [GeV/c]"
-        x_hi      = [20,20,20,20,20,20,20]
+        x_hi      = [15,15,15,15,15,15,15]
 
     elif varname  ==  "dca":
         y_hi     = 1
         yname    = "DCA$_r$ [mm]"
-        xname    = "pT [GeV]"
-        x_hi     = [1.5,2.5,5,10,5,2.5,1.5]
+        xname    = "transverse momentum [GeV/c]"
+        x_hi     = [1.2,2,6,15,6,2,1.2]
     else:
         print("ERROR(plot_resol):please use a valid varname: th, ph, dp, dca")
         return -1
@@ -196,9 +196,8 @@ def plot_resol(varname="ph",resol_file="resol_out_slices.txt", dir_path="./", se
                 xdata = dft.mom[cond]   
             ax.errorbar(xdata,dft["sig_"+varname][cond],yerr=dft["err_"+varname][cond],color="r",ls="none",marker="x")#,label=f"{e_lo} to {eta_hi_pwg[ii]}")
             
-
         ## PWG curve
-        xline      = np.arange(0.001,20,0.001)
+        xline      = np.arange(0.001,50,0.001)
         y_pwg=pwg_value(varname, e_lo, xline)
         if varname=="dca" or varname=="dp":
             ax.plot(xline, y_pwg, 'k--',zorder=10)
@@ -210,10 +209,10 @@ def plot_resol(varname="ph",resol_file="resol_out_slices.txt", dir_path="./", se
     ax = axs[7]
     ax.axis('off')
     ax.plot(xline, y_pwg-100000, "k--",label="PWG Requirements")
-    ax.errorbar(xline,y_pwg-100000,ls="none",marker="o",color="blue",label="Simulation")
+    ax.errorbar(xline,y_pwg-100000,ls="none",marker="o",color="blue",label="v26.04.1")
     #ax.errorbar(xline,y_pwg-100000,ls="none",marker="o",color="blue",label=setting1)#,label=f"{e_lo} to {eta_hi_pwg[ii]}")
     if len(setting2)>0:
-        ax.errorbar(xline,y_pwg-100000,ls="none",marker="x",color="r",label=setting2)#,label=f"{e_lo} to {eta_hi_pwg[ii]}")
+        ax.errorbar(xline,y_pwg-100000,ls="none",marker="x",color="r",label="updated geom.")#,label=f"{e_lo} to {eta_hi_pwg[ii]}")
     ax.set_ylim(0,1)    
     ax.legend(frameon=0,loc="upper left",fontsize=16)
 
@@ -229,7 +228,93 @@ def plot_resol(varname="ph",resol_file="resol_out_slices.txt", dir_path="./", se
 
     plt.savefig(f"{dir_path}tracking_single_resol_{varname}_eta.pdf")
 
+    # If setting 2 exists, plot ratio
+    if len(setting2)>0:
+        fig,axs=plt.subplots(2,4,figsize=(16,8))
+        axs = axs.flat
+        ii=0
+        for ii, e_lo in enumerate(eta_lo_pwg):
+            e_hi = eta_hi_pwg[ii]
+            ax   = axs[ii]
+
+            # select rows within eta range,
+            c1 = df.eta_lo>=e_lo - 0.01
+            c2 = df.eta_hi<=e_hi + 0.01
+            dft = df[c1&c2]
+
+            print("---")
+            print(dft)
+            
+            #For ratios, use pivot dataframes
+            value_df = dft.pivot(index='mom', columns='name', values="sig_"+varname)
+            error_df = dft.pivot(index='mom', columns='name', values="err_"+varname)
+
+            # Denominator and numerator
+            den = value_df['default']
+            num = value_df['local']
+
+            den_err = error_df['default']
+            num_err = error_df['local']
+
+            # Start with NaN everywhere
+            pt = pd.Series(np.nan, index=value_df.index)
+            ratio = pd.Series(np.nan, index=value_df.index)
+            ratio_error = pd.Series(np.nan, index=value_df.index)
+
+            # Only compute when both values are greater than zero
+            mask = (den > 0) & (num > 0)
+
+            pt.loc[mask] = value_df.index[mask]*np.sin(theta2eta((e_lo+e_hi)/2,1))
+
+            ratio.loc[mask] = num.loc[mask] / den.loc[mask]
+
+            ratio_error.loc[mask] = ratio.loc[mask] * np.sqrt(
+                    (num_err.loc[mask] / num.loc[mask])**2 +
+                    (den_err.loc[mask] / den.loc[mask])**2
+            )
+
+            # Build output dataframe
+            result_df = pd.DataFrame({
+                'mom': value_df.index,
+                'pt': pt.values,
+                'ratio': ratio.values,
+                'ratio_error': ratio_error.values
+            })
+
+            result_df = result_df.dropna()
+
+            print("---------------")
+            print(result_df)
+
+            # Plot ratio with error bars
+            if varname=="dca": ## p to pT
+                ax.errorbar(result_df['pt'],result_df['ratio'],yerr=result_df['ratio_error'],color="r",ls="none",marker="s")
+            else:
+                ax.errorbar(result_df['mom'],result_df['ratio'],yerr=result_df['ratio_error'],color="r",ls="none",marker="s")
+            ax.set_ylim(0.6,1.4)
+            ax.set_xlim(0,x_hi[ii]*1.05)
+            ax.text(x_hi[ii]*0.1,0.75, f"{e_lo}<$\\eta$<{e_hi}",fontsize=14)
+
+        ax = axs[7]
+        ax.axis('off')
+        axs[4].set_xlabel(xname)
+        axs[5].set_xlabel(xname)
+        axs[6].set_xlabel(xname)
+
+        axs[0].set_ylabel("Ratio")
+        axs[4].set_ylabel("Ratio")
+
+        #plt.subplots_adjust(left=0.1, right=0.9, top=0.99, bottom=0.3)
+        plt.tight_layout()
+
+        plt.savefig(f"{dir_path}tracking_single_resol_ratio_{varname}_eta.pdf")
 
 if __name__ == "__main__":
-    plot_resol(varname="dca",resol_file="resol_out_slices.txt", dir_path="./", setting1="default", setting2="")
-    plot_eff(eff_file="eff_out.txt", dir_path="./", setting="default")
+    #plot_resol(varname="th",resol_file="resol_out_slices.txt", dir_path="./26.03.1/", setting1="default", setting2="local")
+    #plot_resol(varname="ph",resol_file="resol_out_slices.txt", dir_path="./26.03.1/", setting1="default", setting2="local")
+    #plot_resol(varname="dp",resol_file="resol_out_slices.txt", dir_path="./26.03.1/", setting1="default", setting2="local")
+    #plot_resol(varname="dca",resol_file="resol_out_slices.txt", dir_path="./26.03.1/", setting1="default", setting2="local")
+    #plot_eff(eff_file="eff_out.txt", dir_path="./", setting="default")
+    plot_resol(varname="dp",resol_file="resol_out_slices.txt", dir_path="./26.04.1/", setting1="default", setting2="")
+    plot_resol(varname="dca",resol_file="resol_out_slices.txt", dir_path="./26.04.1/", setting1="default", setting2="")
+
