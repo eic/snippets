@@ -20,7 +20,6 @@
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
-#include <TTreeReaderValue.h>
 #include <TLegend.h>
 #include <TVector3.h>
 #include <string>
@@ -72,7 +71,6 @@ const int seabornBlue = TColor::GetColor(100, 149, 237);
     bool hasGenArea = branchExists(tree, "GeneratedChargedJets.area");
     useNewEDM = hasRecoArea && hasGenArea;
   }
-
 #endif
 
   // Set area branches to dummy values if not using jet EDM
@@ -83,7 +81,6 @@ const int seabornBlue = TColor::GetColor(100, 149, 237);
   if(useNewEDM) {
     recoAreaBranch = "ReconstructedChargedJets.area";
     genAreaBranch = "GeneratedChargedJets.area";
-  
   }
 
   // Use updated constituent branch names if using jet EDM
