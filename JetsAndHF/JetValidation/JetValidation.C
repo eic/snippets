@@ -1079,7 +1079,7 @@ legend6->Draw();
   genChargedJetPartPHist->SetLineWidth(2);
   genChargedJetPartPNoElecHist->SetLineWidth(2);
 
-  genChargedJetPartPHist->SetTitle("Generator Jet Constituent Momentum;Energy [GeV/c]");
+  genChargedJetPartPHist->SetTitle("Generator Jet Constituent Momentum;Momentum [GeV/c]");
 
   TLegend *legend22 = new TLegend(0.7, 0.7, 0.9, 0.9); // Adjust the coordinates as needed
   legend22->AddEntry(genChargedJetPartPHist, "With Electrons", "l");
