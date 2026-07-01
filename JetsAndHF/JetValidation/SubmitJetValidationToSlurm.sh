@@ -5,19 +5,25 @@
 # -----------------------------------------------------------------------------
 #! @brief Submit this script to run JetValidation.C with slurm. 
 #!
-#! @usage
-#!     sbatch SubmitJetValidationToSlurm.sh
+#! @usage Update relevant slurm options, eic-shell location,
+#!   and shell version below. Then submit with:
+#!
+#!       sbatch SubmitJetValidationToSlurm.sh
+#!
+#!   Can also run directly with
+#!
+#!       ./SubmitJetValidationToSlurm.sh
 # =============================================================================
-#SBATCH --partition=ifarm
+#SBATCH --partition=<my partition>
 #SBATCH --time=01:00:00
 #SBATCH --mem=8G
 #SBATCH --account=eic
-#SBATCH --mail-user=dereka@jlab.org
+#SBATCH --mail-user=<my email>
 #SBATCH --mail-type=END,FAIL
-#SBATCH --output=slurm-26060py8ncdis10x100.out
-#SBATCH --error=slurm-26060py8ncdis10x100.err
+#SBATCH --output=<output log name>
+#SBATCH --error=<error log name>
 
-eic_shell=$HOME/.bin/eic-shell
-version=26.05.0-stable
+eic_shell=$HOME/.bin/eic-shell # NOTE edit me!
+version=26.05.0-stable # NOTE edit me!
 
 $eic_shell -v $version -- $PWD/RunJetValidationInShell.sh
