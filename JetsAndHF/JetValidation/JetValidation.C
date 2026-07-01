@@ -7,7 +7,9 @@
 //!   standalone to generate plots for validation.
 //!
 //! \usage In eic-shell:
-//!     root -b -q JetValidation.C'(<input file>, <output file>)'
+//!     root -b -q JetValidation.C'(<input file list>, \
+//!                                 <n files to read>, \
+//!                                 <output path>)'
 // ============================================================================
 
 #include <edm4eic/EDM4eicVersion.h>
@@ -22,11 +24,30 @@
 #include <TTreeReaderArray.h>
 #include <TLegend.h>
 #include <TVector3.h>
+#include <fstream>
 #include <string>
+#include <vector>
 
 #include "fmt/color.h"
 #include "fmt/core.h"
 
+///! Default input file list
+const std::string DefaultInFileList = "filelists/files26060.py8ncdis10x100q100t1000.list";
+
+///! Default no. of files
+const std::size_t DefaultNFiles = 1000;
+
+///! Default output file path
+const std::string DefaultOutPath = ".";
+
+// ----------------------------------------------------------------------------
+// Does a branch exist?
+// ----------------------------------------------------------------------------
+/*! Checks if a branch exists in a TTree.
+ *!
+ *! \param[in] tree The tree to check
+ *! \param[in] branch The branch to check for
+ */
 bool branchExists(TTree* tree, const std::string& branch) {
   bool exists = false;
   if(tree->GetBranch(branch.c_str())) {
@@ -35,24 +56,55 @@ bool branchExists(TTree* tree, const std::string& branch) {
   return exists;
 }
 
+// ----------------------------------------------------------------------------
+// Macro body
+// ----------------------------------------------------------------------------
+/*! Process input files to generate a set of reconstructed,
+ *! generated jet distributions and save them as PNGs.
+ *!
+ *! \param[in]  filelist     Input filelist to use
+ *! \param[in]  n_files      Number of files to read
+ *! \param[out] results_path Location to save PNGs to
+ */
 int JetValidation(
-  const std::string& rec_file = "root://epicxrd1.sdcc.bnl.gov:1095//eic/EPIC//RECO/26.06.0/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000/pythia8.316-1.0_NC_noRad_ep_10x100_q2_100to1000_run000.0000.eicrecon.edm4eic.root",
-  const std::string& results_path = "./"
+  const std::string& filelist = DefaultInFileList,
+  const std::size_t n_files = DefaultNFiles,
+  const std::string& results_path = DefaultOutPath
 ) {
 
   const bool PRINT = true;
 
+  std::ifstream mylist(filelist);
+  if (!mylist.is_open()) {
+    std::cerr << "PANIC: Couldn't open fileslist '" << filelist << "'!" << std::endl;
+    return 1;
+  }
+
+  // Load input files
+  std::string file;
+  std::size_t i_file = 0;
+  std::vector<std::string> rec_files;
+  while (std::getline(mylist, file)) {
+    rec_files.push_back(file);
+    ++i_file;
+    if (i_file == n_files) {
+      break;
+    }
+  }
+
   // Input
   TChain *mychain = new TChain("events");
-  mychain->Add(rec_file.c_str());
+  for (const auto& rec_file : rec_files) {
+    mychain->Add(rec_file.c_str());
+  }
 
   const int seabornRed = TColor::GetColor(213, 94, 0);
 
-// Seaborn Green: #009E73 -> (0, 158, 115)
-const int seabornGreen = TColor::GetColor(0, 158, 115);
+  // Seaborn Green: #009E73 -> (0, 158, 115)
+  const int seabornGreen = TColor::GetColor(0, 158, 115);
 
-// Seaborn Blue: #56B4E9 -> (86, 180, 233)
-const int seabornBlue = TColor::GetColor(100, 149, 237);
+  // Seaborn Blue: #56B4E9 -> (86, 180, 233)
+  const int seabornBlue = TColor::GetColor(100, 149, 237);
 
   // TTreeReader
   TTreeReader tree_reader(mychain);
@@ -65,7 +117,7 @@ const int seabornBlue = TColor::GetColor(100, 149, 237);
   bool useNewEDM = false;
 #if EDM4EIC_BUILD_VERSION >= EDM4EIC_VERSION(8,9,0)
   {
-    auto file = TFile::Open(rec_file.c_str(), "READ");
+    auto file = TFile::Open(rec_files.front().c_str(), "READ");
     auto tree = file->Get<TTree>("events");
     bool hasRecoArea = branchExists(tree, "ReconstructedChargedJets.area");
     bool hasGenArea = branchExists(tree, "GeneratedChargedJets.area");
