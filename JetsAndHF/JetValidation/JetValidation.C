@@ -124,6 +124,9 @@ int JetValidation(
     useNewEDM = hasRecoArea && hasGenArea;
   }
 #endif
+  if (PRINT) {
+    std::cout << "INFO: Using new EDM? " << useNewEDM << std::endl;
+  }
 
   // Set area branches to dummy values if not using jet EDM
   //   --> These branches won't be used if not using
