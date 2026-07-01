@@ -14,8 +14,10 @@
 #SBATCH --account=eic
 #SBATCH --mail-user=dereka@jlab.org
 #SBATCH --mail-type=END,FAIL
+#SBATCH --output=slurm-26060py8ncdis10x100.out
+#SBATCH --error=slurm-26060py8ncdis10x100.err
 
 eic_shell=$HOME/.bin/eic-shell
-version=25.06.0-stable
+version=26.05.0-stable
 
 $eic_shell -v $version -- $PWD/RunJetValidationInShell.sh
