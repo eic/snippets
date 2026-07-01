@@ -50,7 +50,7 @@ order of entries reflects the order which might be good to display on the web.
 | --------- | ----- |
 | numberRecoJets.png | Number of Charged Jets per Event (Reconstruction Level) |
 | numberConstituentPerRecoJet.png | Number of Constituents per Charged Jet (Reconstruction Level) |
-| recoJetEnergy.png | Charged Jet Energy ($|\eta| < 2.5$, Reconstruction Level) |
+| recoJetEnergy.png | Charged Jet Energy ($| \eta | < 2.5$, Reconstruction Level) |
 | recoJetEta.png | Charged Jet $\eta$ ($E_{jet}$ > 5 GeV, Reconstruction Level) |
 | recoJetEnergyVsArea.png | Charged Jet Energy vs. Area (Reconstruction Level) |
 | recoJetEnergyVsEta.png | Charged Jet Energy vs. $\eta$ (With $e^{-}$, Reconstruction Level) |
@@ -72,7 +72,7 @@ order of entries reflects the order which might be good to display on the web.
 | --------- | ----- |
 | numberGenJets.png | Number of Charged Jets per Event (Generator Level) |
 | numberConstituentPerGenJet.png | Number of Constituents per Charged Jet (Generator Level) |
-| genJetEnergy.png | Charged Jet Energy ($|\eta| < 2.5$, Generator Level) |
+| genJetEnergy.png | Charged Jet Energy ($| \eta | < 2.5$, Generator Level) |
 | genJetEta.png | Charged Jet $\eta$ ($E_{jet}$ > 5 GeV, Generator Level) |
 | genJetAea.png | Charged Jet Area ($E_{jet}$ > 5 GeV, Generator Level) |
 | genJetEnergyVsEta.png | Charged Jet Energy vs. $\eta$ (With $e^{-}$, Generator Level) |
