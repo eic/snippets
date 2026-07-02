@@ -1,11 +1,21 @@
 # Jet Macro For Validation
 
-**Last update:** 06.25.2026, DMA
+**Last update:** 07.01.2026, DMA
 
-### Shell Used
---------------
+### Shell Used and Usage
+------------------------
 
-Utilized eic-shell version `26.05.0-stable` for testing.
+Utilized eic-shell version `26.05.0-stable` for testing. Macro can be run
+directly in eic-shell with:
+```bash
+root -b -q JetValidation.C
+```
+
+And can be run via slurm (e.g. at the JLab ifarm) with after updating
+options in script:
+```bash
+sbatch SubmitJetValidationToSlurm.sh
+```
 
 ### Files Used
 --------------
@@ -21,8 +31,11 @@ Utilized 26.05.0 Pythia8 NC DIS 10x100 (q2 = 100 - 1K) dataset for before test:
 rucio did content list epic:/RECO/26.05.0/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000
 ```
 
-Complete filelist saved to `filelists/files26050.py8ncdis10x100q100t1000.list`. Example
-plots generated using file `*_run000.0000.*` and saved to `examples/26050_000_0000`.
+Complete filelist saved to `filelists/files26050.py8ncdis10x100q100t1000.list`.  Ran two tests:
+  - One using only 1 file (`*_run000.0000.*`) and saved outputs to
+    `examples/plots.26050_run000_0000to0000.tar.gz`.
+  - One using first 1K files (`*_run000.0{000-999}.*`) and saved outputs to
+    `examples/plots.26050_run000_0000to0999.tar.gz`.
 
 #### 26.06.0
 
@@ -32,8 +45,11 @@ Utilized 26.06.0 Pythia8 NC DIS 10x100 (q2 = 100 - 1K) dataset for after test:
 rucio did content list epic:/RECO/26.06.0/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000
 ```
 
-Complete filelist saved to `filelists/files26060.py8ncdis10x100q100t1000.list`. Example
-Plots generated using file `*_run000.0000.*` and saved to `examples/26060_000_000`.
+Complete filelist saved to `filelists/files26060.py8ncdis10x100q100t1000.list`.  Ran two tests:
+  - One using only 1 file (`*_run000.0000.*`) and saved outputs to
+    `examples/plots.26060_run000_0000to0000.tar.gz`.
+  - One using first 1K files (`*_run000.0{000-999}.*`) and saved outputs to
+    `examples/plots.26060_run000_0000to0999.tar.gz`.
 
 ### Plot File Names and Titles
 ------------------------------
@@ -50,7 +66,7 @@ order of entries reflects the order which might be good to display on the web.
 | --------- | ----- |
 | numberRecoJets.png | Number of Charged Jets per Event (Reconstruction Level) |
 | numberConstituentPerRecoJet.png | Number of Constituents per Charged Jet (Reconstruction Level) |
-| recoJetEnergy.png | Charged Jet Energy ($| \eta | < 2.5$, Reconstruction Level) |
+| recoJetEnergy.png | Charged Jet Energy ($\|\eta\|$ < 2.5, Reconstruction Level) |
 | recoJetEta.png | Charged Jet $\eta$ ($E_{jet}$ > 5 GeV, Reconstruction Level) |
 | recoJetEnergyVsArea.png | Charged Jet Energy vs. Area (Reconstruction Level) |
 | recoJetEnergyVsEta.png | Charged Jet Energy vs. $\eta$ (With $e^{-}$, Reconstruction Level) |
@@ -72,7 +88,7 @@ order of entries reflects the order which might be good to display on the web.
 | --------- | ----- |
 | numberGenJets.png | Number of Charged Jets per Event (Generator Level) |
 | numberConstituentPerGenJet.png | Number of Constituents per Charged Jet (Generator Level) |
-| genJetEnergy.png | Charged Jet Energy ($| \eta | < 2.5$, Generator Level) |
+| genJetEnergy.png | Charged Jet Energy ($\|\eta\|$ < 2.5, Generator Level) |
 | genJetEta.png | Charged Jet $\eta$ ($E_{jet}$ > 5 GeV, Generator Level) |
 | genJetAea.png | Charged Jet Area ($E_{jet}$ > 5 GeV, Generator Level) |
 | genJetEnergyVsEta.png | Charged Jet Energy vs. $\eta$ (With $e^{-}$, Generator Level) |
