@@ -15,7 +15,7 @@
 #!       ./SubmitJetValidationToSlurm.sh
 # =============================================================================
 #SBATCH --partition=<my partition>
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --mem=8G
 #SBATCH --account=eic
 #SBATCH --mail-user=<my email>
