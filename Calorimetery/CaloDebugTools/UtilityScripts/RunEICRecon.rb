@@ -8,30 +8,34 @@
 # =============================================================================
 
 # i/o parameters
-in_ddsim   = "../forTestingJetPodioRelations.edm4hep.root"
-out_podio  = "forTestingUserConfigurability_change1V2_withMinJetPtAndMinCstPtChanged_recoJetAlgoSetToGarbage_reco2gen12.podio.root"
-out_plugin = "forTestingUserConfigurability_change1V2_withMinJetPtAndMinCstPtChanged_recoJetAlgoSetToGarbage_reco2gen12.plugin.root"
+in_ddsim   = "forPFA1.epic26041e10th33pim.edm4hep.root"
+out_podio  = "test.eicrecon.root"
 
-# output collections from EICrecon
+# collections to output
 out_collect = [
-  "GeneratedParticles",
-  "GeneratedJets",
-  "GeneratedChargedJets",
-  "ReconstructedJets",
-  "ReconstructedChargedJets"
+  "HcalBarrelHits",
+  "HcalBarrelRawHits",
+  "HcalBarrelRawHitLinks",
+  "HcalBarrelRecHits",
+  "HcalBarrelClusters",
 ].compact.reject(&:empty?).join(',')
 
-# plugins to run in EICrecon
+# plugins to run
 plugins = [
-  "dump_flags"
+  "dump_flags",
 ].compact.reject(&:empty?).join(',')
 
-# options
+# additional options
 options = [
-  "-Peicrecon:LogLevel=debug"
+  "-Peicrecon:LogLevel=debug",
 ].compact.reject(&:empty?).join(' ')
 
+# set options appropriately
+out_opt  = out_collect.empty? ? "" : "-Ppodio:output_collections=#{out_collect}"
+plug_opt = plugins.empty? ? "" : "-Pplugins=#{plugins}"
+opt_opt  = options.empty? ? "" : "#{options}"
+
 # run EICrecon
-exec("eicrecon -Pplugins=#{plugins} -Ppodio:output_collections=#{out_collect} #{options} -Ppodio:output_file=#{out_podio} -Phistsfile=#{out_plugin} #{in_ddsim}")
+exec("eicrecon #{plug_opt} #{out_opt} #{opt_opt} -Ppodio:output_file=#{out_podio} #{in_ddsim}")
 
 # end =========================================================================

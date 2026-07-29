@@ -27,6 +27,30 @@ using MomVector=ROOT::Math::DisplacementVector3D<ROOT::Math::Cartesian3D<Double_
 // FUNCTION DEFINITIONS
 //-----------------------------------------------------------------------------------------------------------------------------
 
+// Extra utilities - calculate 10ths of histogram contents
+template<typename h>
+void calcTenths(const h& hist){
+  int iTenthBin{1};
+
+  // Count over all bins in histogram
+  for(int iHistBin{1}; iHistBin<hist->GetNbinsX(); iHistBin++){
+    // Break out of loop after 90% mark (last 10% up to last bin)
+    if(iTenthBin == 10) break;
+
+    // Else calculate fraction of events up to ith bin
+    float frac = (float)hist->Integral(1,iHistBin)/hist->Integral();
+    
+    // First time fraction of events is greater than the n*10% mark, print previous bin and increment n
+    if(frac > (float)iTenthBin/10){
+      cout<<(int)iTenthBin*10<<"% \t bin no. "<<iHistBin-1<<"\t bin centre "<<hist->GetBinCenter(iHistBin-1)<<endl;
+      iTenthBin++;
+    }
+  }
+
+  return;
+}
+
+
 // Calculate energy from momentum and mass
 // 1. Using vector structures for momentum
 // Works for ANY structure which contains Mag2() operator
@@ -129,6 +153,34 @@ Double_t calcT_eXBE(const V& p, const V& q, const V& pp, const V& X){
   double t = (pcorr-p).M2();
   return TMath::Abs(t);
 }
+// 3. Using scalar mass of scattered baryon (with e/e')
+template<typename V>
+Double_t calcT_eXBE(const V& e, const V& p, const V& ep, const Float_t& mb, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((e+p-ep-X).X(),(e+p-ep-X).Y(),(e+p-ep-X).Z(),(e+p-ep-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(mb,2));
+  P3EVector pcorr(p4miss.Vect().X(), p4miss.Vect().Y(), p4miss.Vect().Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
+// 4. Using scalar mass of scattered baryon (with q)
+template<typename V>
+Double_t calcT_eXBE(const V& p, const V& q, const Float_t& mb, const V& X){
+  // Calculate 'missing' momentum, ignoring scattered baryon vector
+  P3EVector p4miss((p+q-X).X(),(p+q-X).Y(),(p+q-X).Z(),(p+q-X).E());
+    
+  // Define corrected momentum vector using missing momentum and scattered baryon mass
+  Float_t pmiss_mag = p4miss.Vect().R();
+  Float_t pcorr_mag = TMath::Sqrt(TMath::Power(pmiss_mag,2) + TMath::Power(mb,2));
+  P3EVector pcorr(p4miss.Vect().X(), p4miss.Vect().Y(), p4miss.Vect().Z(), pcorr_mag);
+
+  double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
 
 // Calculate Mandelstam t - eBABE method using tRECO conventions
 // Include electron (beam and scattered) information into BABE method
@@ -203,6 +255,29 @@ Double_t calcT_eXBABE(const V& p, const V& q, const V& pp, const V& X){
   P3EVector pcorr(pcorr_vect.X(), pcorr_vect.Y(), pcorr_vect.Z(), pcorr_mag);
 
   double t = (pcorr-p).M2();
+  return TMath::Abs(t);
+}
+
+// Calculate Mandelstam t - eHe method from ECCE EDT paper
+// A. Bylinkin et al., Nucl. Instrum. Meth. A 1052, 168238 (2023); eq. 9
+// Needs full event information - give vectors in lab frame
+template<typename V>
+Double_t calcT_eHe(const V& e, const V& p, const V& ep, const V& pp, const V& X){
+  // Extract intermediate quantities from 4-vectors
+  double M = p.M();
+  double nu = e.E() - ep.E();
+  double Q2 = (e-ep).M2();
+
+  // Calculate cos(theta between virtual and real photon)
+  P3EVector q((e-ep).X(), (e-ep).Y(), (e-ep).Z(), (e-ep).E());
+
+  double cTheta = TMath::Cos( (q-X).Theta() );
+  
+  double cosTerm = TMath::Sqrt((nu*nu)+Q2)*cTheta;
+  double num = M*Q2 + (2*M*nu)*(nu-cosTerm);
+  double den = M + nu - cosTerm;
+
+  double t = num/den;
   return TMath::Abs(t);
 }
 

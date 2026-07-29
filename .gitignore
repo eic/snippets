@@ -33,11 +33,11 @@ images/
 *.a
 *.lib
 
-# Executables
+# Executables and logs
 *.exe
 *.out
 *.app
-
+*.err
 
 # Build and install directories
 build/

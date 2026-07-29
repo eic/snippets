@@ -8,8 +8,8 @@ ROOTGLIBS     = $(shell root-config --glibs)
 INCFLAGS = -I$(shell root-config --incdir)
 LDFLAGS = -L$(shell root-config --libdir)
 
-CXX = g++-12
-FLAGS = -Wall -g $(INCFLAGS) $(LDFLAGS)
+CXX = g++
+FLAGS = -Wall -g $(ROOTCFLAGS) $(INCFLAGS) $(LDFLAGS)
 
 COMPILE = $(CXX) $(FLAGS) -c 
 
