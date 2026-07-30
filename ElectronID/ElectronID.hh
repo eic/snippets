@@ -39,7 +39,7 @@ public:
 	edm4eic::ReconstructedParticleCollection FindHadronicFinalState(int object_id);
 	edm4eic::ReconstructedParticleCollection FindScatteredElectron();	
 	edm4eic::ReconstructedParticleCollection GetTruthReconElectron();	
-	edm4hep::MCParticleCollection GetMCElectron();	
+	const edm4hep::MCParticleCollection& GetMCElectron();
 	edm4hep::MCParticleCollection GetMCHadronicFinalState();
 	edm4eic::ReconstructedParticle SelectHighestPT(const edm4eic::ReconstructedParticleCollection& rcparts);
 	double GetCalorimeterEnergy(const edm4eic::ReconstructedParticle& rcp);
@@ -55,6 +55,8 @@ public:
 	double get_mDeltaH_max() const { return mDeltaH_max; }
 	double get_mIsoR() const { return mIsoR; }
 	double get_mIsoE() const { return mIsoE; }
+	double get_mEoEH_min() const { return mEoEH_min; }
+	double get_mPID_veto() const { return mPID_veto; }
 	int GetMinTrackPoints() const { return minTrackPoints; }
 
 	// for HFS QA
@@ -68,6 +70,10 @@ public:
 		int nTrackPoints;
 		double recon_EoP;
 		double recon_isoE;
+		double recon_EoEH;
+		int recon_pID;
+		double recon_Le; // likelihood of being an electron
+		double recon_Lh; // likelihood of being a hadron
 	};
 	vector<DetValues> det_val;
 	vector<DetValues> e_det;
@@ -76,6 +82,9 @@ public:
 	vector<DetValues> else_det;
 
 	double rcpart_n_clusters;
+
+	bool meMCValid = false;
+	edm4hep::MCParticleCollection meMC;
 
 private:
 
@@ -90,6 +99,9 @@ private:
 	double mDeltaH_min;
 	double mDeltaH_max;
 	double mIsoR;
+	double mEcone;
+	double mEoEH_min;
+	double mPID_veto;
 	double mIsoE;
 	int minTrackPoints = 3;
 	
@@ -101,6 +113,7 @@ private:
 	double rcpart_sum_cluster_E;
 	double rcpart_lead_cluster_E;
 	double rcpart_isolation_E;
+	double rcpart_sum_cluster_H;
 
 	int eScatIndex;
 };

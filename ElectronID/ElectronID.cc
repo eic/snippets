@@ -25,6 +25,11 @@ ElectronID::ElectronID() {
 
 	minTrackPoints = 3;
 
+	mEcone = 0.3;
+	mEoEH_min = 0.85;
+
+	mPID_veto = 0.62;
+
 	boost = LorentzRotation(); // Initialize to identity
 }
 
@@ -44,6 +49,11 @@ ElectronID::ElectronID(double Ee, double Eh) {
 	mIsoE = 0.9;
 
 	minTrackPoints = 3;
+
+	mEcone = 0.3;
+	mEoEH_min = 0.85;
+
+	mPID_veto = 0.62;
 
 	boost = LorentzRotation(); // Initialize to identity
 }
@@ -66,6 +76,11 @@ void ElectronID::SetEvent(const podio::Frame* event) {
 	else_det.clear();
 	det_val.clear();
 	// std::cout << "** Event set in ElectronID. " << std::endl;
+
+	meMCValid = false;
+	meMC = edm4hep::MCParticleCollection();
+	meMC.setSubsetCollection();
+
 	return;
 }
 
@@ -84,7 +99,7 @@ edm4hep::MCParticle ElectronID::GetMC(edm4eic::ReconstructedParticle e_rec) {
 
 int ElectronID::Check_eID(edm4eic::ReconstructedParticle e_rec) {
 
-	edm4hep::MCParticleCollection meMC = GetMCElectron();
+	const auto& meMC = GetMCElectron();
 	if ( meMC.size() == 0 )
 		return 86; // No MC electron found
 
@@ -162,13 +177,43 @@ edm4eic::ReconstructedParticleCollection ElectronID::FindScatteredElectron() {
 			// Calculate rcpart_ member variables for this event
 			CalculateParticleValues(reconPart, rcparts);
 
+			double trackTheta = edm4hep::utils::anglePolar(reconPart.getMomentum())*(180./M_PI);
+			double clusterTheta = GetMomentumVectorFromCluster(reconPart, 0).Theta()*(180./M_PI);
+
 			// Calculate isolation fraction for this event
 			double recon_isoE = rcpart_sum_cluster_E / rcpart_isolation_E;
 
 			// Calculate E/p for this event
 			double recon_EoP = rcpart_sum_cluster_E / edm4hep::utils::magnitude(reconPart.getMomentum());
 
-			det_val.push_back({Check_eID(reconPart), n_track_points, recon_EoP, recon_isoE});
+			// Calculate E/E+H for this event
+			double recon_EoEH = rcpart_sum_cluster_E / (rcpart_sum_cluster_E + rcpart_sum_cluster_H);
+
+			// pID detector look up
+			int recon_pID = reconPart.getPDG();
+			double pIDgoodness = reconPart.getGoodnessOfPID();
+
+			double Le = 0.0, Lpi = 0.0, Lk = 0.0, Lp = 0.0;
+
+			for (const auto& pid : reconPart.getParticleIDs()) 
+			{
+				const int apdg = std::abs(pid.getPDG());
+				const double L = pid.getLikelihood();
+				if (apdg == 11) Le = std::max(Le, L);
+				else if (apdg == 211) Lpi = std::max(Lpi, L);
+				else if (apdg == 321) Lk = std::max(Lk, L);
+				else if (apdg == 2212) Lp = std::max(Lp, L);
+			}
+
+			double Lhad = std::max({Lpi, Lk, Lp});
+			double Lhadsum = Lpi + Lk + Lp;
+			double eFrac = (Le + Lhadsum > 0.0) ? Le / (Le + Lhadsum) : 0.0;
+			double hFrac = (Le + Lhad > 0.0) ? Lhad / (Le + Lhad) : 0.0;
+
+			// find real PDG of the particle
+			int mc_PDG = Check_eID(reconPart);
+
+			det_val.push_back({mc_PDG, n_track_points, recon_EoP, recon_isoE, recon_EoEH, recon_pID, eFrac, hFrac});
 
 			if ( n_track_points < minTrackPoints ) 
 				continue;
@@ -176,15 +221,18 @@ edm4eic::ReconstructedParticleCollection ElectronID::FindScatteredElectron() {
 			if(recon_isoE < mIsoE) 
 				continue;
 
-			double trackTheta = edm4hep::utils::anglePolar(reconPart.getMomentum())*(180./M_PI);
-			double clusterTheta = GetMomentumVectorFromCluster(reconPart, 0).Theta()*(180./M_PI);
+			if (hFrac > mPID_veto) 
+				continue;
+
+			// if (recon_EoEH < mEoEH_min) 
+			// 	continue;
 
 			if ( recon_EoP > mEoP_min && recon_EoP < mEoP_max )
 			{
 				scatteredElectronCandidates.push_back(reconPart);
 				continue;
 			}
-			else if ( (trackTheta > 158 && trackTheta < 162) || (clusterTheta > 22 && clusterTheta < 33) )
+			else if ( (trackTheta > 158 && trackTheta < 162) || (clusterTheta > 22 && clusterTheta < 33) ) // at small angles, it works better to use cluster to estimate theta here
 			{
 				scatteredElectronCandidates_noEoP.push_back(reconPart);
 				continue;
@@ -206,8 +254,7 @@ edm4hep::MCParticleCollection ElectronID::GetMCHadronicFinalState() {
 
 	const auto& mcparts = static_cast<const edm4hep::MCParticleCollection&>(*(mEvent->get("MCParticles")));
 
-	std::vector<edm4hep::MCParticle> mc_hadronic;
-	edm4hep::MCParticleCollection meMC = GetMCElectron();
+	const auto& meMC = GetMCElectron();
 
 	bool found_scattered_e = false; 
 	for(const auto& mcp : mcparts) {
@@ -223,64 +270,89 @@ edm4hep::MCParticleCollection ElectronID::GetMCHadronicFinalState() {
 	return mhMC;
 }
 
-edm4hep::MCParticleCollection ElectronID::GetMCElectron() {
+const edm4hep::MCParticleCollection& ElectronID::GetMCElectron() {
+// updated version: search for status 1 electrons with the shortest generation path to a beam electron. Should also work even if there are multiple beam electrons.
 
-	edm4hep::MCParticleCollection meMC;
-	meMC.setSubsetCollection();
-	
-	const auto& mcparts = static_cast<const edm4hep::MCParticleCollection&>(*(mEvent->get("MCParticles")));
-	if ( eScatIndex != -1 )
-		meMC.push_back(mcparts[eScatIndex]);
+    if (meMCValid)
+        return meMC;
 
-	////
+    meMC = edm4hep::MCParticleCollection();
+    meMC.setSubsetCollection();
 
-	for (const auto& mcp : mcparts) 
-	{
-		if (mcp.getPDG() != 11 || mcp.getGeneratorStatus() != 4) 
-			continue;
+    const auto& mcparts = static_cast<const edm4hep::MCParticleCollection&>(*(mEvent->get("MCParticles")));
 
-		std::vector<edm4hep::MCParticle> stack;
-		stack.insert(stack.end(), mcp.getDaughters().begin(), mcp.getDaughters().end());
+    std::vector<int> beam_electron_indices;
+    for (const auto& p : mcparts) {
+        if (p.getPDG() == 11 && p.getGeneratorStatus() == 4)
+            beam_electron_indices.push_back(p.getObjectID().index);
+    }
 
-		int shortest_gen = 999;
-		int generations = 0;
-		edm4hep::MCParticle meMC_candidates;
-		bool found_candidate = false;
+    if (beam_electron_indices.empty()) {
+        meMCValid = true;
+        return meMC;
+    }
 
-		while (!stack.empty() ) {
-			generations++;
-			auto cur = stack.back();
-			stack.pop_back();
+    std::unordered_map<int, std::pair<int, std::vector<edm4hep::MCParticle>>> per_beam;
+    for (int idx : beam_electron_indices)
+        per_beam[idx] = {INT_MAX, {}};
 
-			if (cur.getPDG() == 11 && cur.getGeneratorStatus() == 1) {
-				
-				if ( generations < shortest_gen )
-				{
-					shortest_gen = generations;
-					meMC_candidates = cur;
-					found_candidate = true;
-				}
-				break;
-			}
+    for (const auto& cand : mcparts) {
+        if (cand.getPDG() != 11 || cand.getGeneratorStatus() != 1)
+            continue;
 
-			const auto& kids = cur.getDaughters();
-			if (!kids.empty()) {
-				stack.insert(stack.end(), kids.begin(), kids.end());
-			}
-		}
+        std::queue<std::pair<edm4hep::MCParticle, int>> frontier;
+        std::unordered_set<int> visited;
 
-		if ( found_candidate )
-			meMC.push_back(meMC_candidates);
-	}
+        visited.insert(cand.getObjectID().index);
+        frontier.emplace(cand, 0);
 
-	return meMC;
+        while (!frontier.empty()) {
+            auto [cur, depth] = frontier.front();
+            frontier.pop();
+
+            const int cur_idx = cur.getObjectID().index;
+
+            if (cur.getPDG() == 11 && cur.getGeneratorStatus() == 4
+                && per_beam.count(cur_idx)) {
+
+                auto& [min_gen, cands] = per_beam[cur_idx];
+                if (depth < min_gen) {
+                    min_gen = depth;
+                    cands.clear();
+                    cands.push_back(cand);
+                } else if (depth == min_gen) {
+                    cands.push_back(cand);
+                }
+                break;
+            }
+
+            for (auto it = cur.parents_begin(); it != cur.parents_end(); ++it) {
+                const auto parent = *it;
+                const int parent_idx = parent.getObjectID().index;
+                if (parent_idx >= 0 && visited.insert(parent_idx).second)
+                    frontier.emplace(parent, depth + 1);
+            }
+        }
+    }
+
+    std::vector<int> sorted_beam = beam_electron_indices;
+    std::sort(sorted_beam.begin(), sorted_beam.end());
+
+    for (int beam_idx : sorted_beam) {
+        const auto& [min_gen, cands] = per_beam[beam_idx];
+        for (const auto& c : cands)
+            meMC.push_back(c);
+    }
+
+    meMCValid = true;
+    return meMC;
 }
 
 edm4eic::ReconstructedParticleCollection ElectronID::GetTruthReconElectron() {
 
 	// cout << "New process " << endl;
 
-	const edm4hep::MCParticleCollection meMC = GetMCElectron();
+	const auto& meMC = GetMCElectron();
 	edm4eic::ReconstructedParticleCollection meRecon;
 	meRecon.setSubsetCollection();
 
@@ -314,6 +386,7 @@ void ElectronID::CalculateParticleValues(const edm4eic::ReconstructedParticle& r
 	rcpart_sum_cluster_E = 0.;
 	rcpart_lead_cluster_E = 0.;
 	rcpart_isolation_E = 0.;
+	rcpart_sum_cluster_H = 0.;
 
 	const edm4eic::Cluster* lead_cluster = nullptr;
 
@@ -362,6 +435,74 @@ void ElectronID::CheckSurroundingClusters(const edm4hep::Vector3f& lead_pos,
 				rcpart_isolation_E += other_cluster.getEnergy();
 				rcpart_n_clusters ++;
 			}
+		}
+	}
+
+	// HCal
+	const auto& hcal_barrel = static_cast<const edm4eic::ClusterCollection&>(*(mEvent->get("HcalBarrelClusters")));
+	const auto& hcal_f_endcap = static_cast<const edm4eic::ClusterCollection&>(*(mEvent->get("HcalEndcapNClusters")));
+	const auto& hcal_b_endcap = static_cast<const edm4eic::ClusterCollection&>(*(mEvent->get("LFHCALClusters")));
+	
+	for ( const auto& hcal_cluster : hcal_barrel) {
+		const auto& other_pos = hcal_cluster.getPosition();
+		double other_eta = edm4hep::utils::eta(other_pos);
+		double other_phi = edm4hep::utils::angleAzimuthal(other_pos);
+
+		double d_eta = other_eta - lead_eta;
+		double d_phi = other_phi - lead_phi;
+
+		// Adjust d_phi to be in the range (-pi, pi)
+		if (d_phi > M_PI) d_phi-=2*M_PI;
+		if (d_phi < -M_PI) d_phi+=2*M_PI;
+
+		double dR = std::sqrt(std::pow(d_eta, 2) + std::pow(d_phi, 2));
+
+		// Check if the cluster is within the isolation cone
+		if (dR < mEcone) {
+			rcpart_sum_cluster_H += hcal_cluster.getEnergy();
+			rcpart_n_clusters ++;
+		}
+	}
+
+	for ( const auto& hcal_cluster : hcal_f_endcap) {
+		const auto& other_pos = hcal_cluster.getPosition();
+		double other_eta = edm4hep::utils::eta(other_pos);
+		double other_phi = edm4hep::utils::angleAzimuthal(other_pos);
+
+		double d_eta = other_eta - lead_eta;
+		double d_phi = other_phi - lead_phi;
+
+		// Adjust d_phi to be in the range (-pi, pi)
+		if (d_phi > M_PI) d_phi-=2*M_PI;
+		if (d_phi < -M_PI) d_phi+=2*M_PI;
+
+		double dR = std::sqrt(std::pow(d_eta, 2) + std::pow(d_phi, 2));
+
+		// Check if the cluster is within the isolation cone
+		if (dR < mEcone) {
+			rcpart_sum_cluster_H += hcal_cluster.getEnergy();
+			rcpart_n_clusters ++;
+		}
+	}
+
+	for ( const auto& hcal_cluster : hcal_b_endcap) {
+		const auto& other_pos = hcal_cluster.getPosition();
+		double other_eta = edm4hep::utils::eta(other_pos);
+		double other_phi = edm4hep::utils::angleAzimuthal(other_pos);
+
+		double d_eta = other_eta - lead_eta;
+		double d_phi = other_phi - lead_phi;
+
+		// Adjust d_phi to be in the range (-pi, pi)
+		if (d_phi > M_PI) d_phi-=2*M_PI;
+		if (d_phi < -M_PI) d_phi+=2*M_PI;
+
+		double dR = std::sqrt(std::pow(d_eta, 2) + std::pow(d_phi, 2));
+
+		// Check if the cluster is within the isolation cone
+		if (dR < mEcone) {
+			rcpart_sum_cluster_H += hcal_cluster.getEnergy();
+			rcpart_n_clusters ++;
 		}
 	}
 

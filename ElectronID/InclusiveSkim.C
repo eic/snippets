@@ -50,7 +50,7 @@ void InclusiveSkim() {
 		const auto event = podio::Frame(reader.readNextEntry("events"));
 		eFinder->SetEvent(&event);
 
-		edm4hep::MCParticleCollection e_mc = eFinder->GetMCElectron();
+		const auto& e_mc = eFinder->GetMCElectron();
 
 		// Skip events without scattered MC electron
 		if(e_mc.size() == 0) continue;
