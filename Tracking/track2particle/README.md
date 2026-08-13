@@ -33,7 +33,7 @@ performance package.
 
 ## Environment
 
-Use the same EIC software release that can read the reconstructed files. The
+Run within eic-shell to get PODIO suport. The
 Python environment needs PODIO/EDM4hep plus `numpy`, `pandas`, `awkward`,
 `uproot`, `matplotlib`, `seaborn`, `particle`, and `lmfit`.
 
