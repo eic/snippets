@@ -1,0 +1,15 @@
+COMPILATION:
+
+compile the analysis code using the provided Makefile :-
+
+-----$ make analysis
+
+this creates the executable:-
+
+analysis
+
+RUNNING:
+
+To Run the code use:-
+
+-----$ ./analysis <inputFiles/test.list> <OutputFile/out.root> <CollissionSystem/eAu/ep> <jetRadius/1.0> <Output_signalFile/signal.root> <Output_backgroundFile/bkg.root> <output_genFile/gen.root>
