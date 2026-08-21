@@ -12,7 +12,7 @@ FASTJETCFLAGS   = $(shell fastjet-config --cxxflags)
 FASTJETLIBS     = $(shell fastjet-config --libs)
 
 
-CXX = g++-14
+CXX = g++
 FLAGS = -Wall -g $(INCFLAGS) $(LDFLAGS) $(FASTJETCFLAGS)
 
 COMPILE = $(CXX) $(FLAGS) -c 
