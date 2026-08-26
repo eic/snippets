@@ -1,0 +1,134 @@
+import os
+
+# All generated data stays below calibration/; no parent scratch directory is used.
+EICRECON_DIR = 'data/eicrecon'
+
+ID_RANGES = [(i, 10*i) for i in range(20)]
+
+rule all:
+    input:
+        'plot/theta80_100/gamma/zRes0mm/UncalibratedERecoVsETruth_CALOROCCluster_Single_energy2000_20000.png'
+
+rule sim_single_particle:
+    output:
+        'data/eicrecon/Single_energy2000_20000/gamma/id{id1}_{id2}/output.edm4hep.root'
+    params:
+        output_abs=lambda wc, output: os.path.abspath(output[0])
+    shell:
+        r'''
+        mkdir -p "$(dirname "{params.output_abs}")"
+source /opt/detector/epic-main/bin/thisepic.sh
+npsim --compactFile $DETECTOR_PATH/epic_craterlake.xml --numberOfEvents 200 --outputFile {params.output_abs} --gun.particle "gamma" --gun.momentumMin 2000 --gun.momentumMax 20000 --gun.distribution uniform --gun.thetaMin 80*deg --gun.thetaMax 100*deg  --enableGun
+        '''
+
+rule eicrecon:
+    input:
+        simulation='data/eicrecon/Single_energy2000_20000/gamma/id{id1}_{id2}/output.edm4hep.root',
+    output:
+        'data/eicrecon/Single_energy2000_20000/gamma/id{id1}_{id2}/zRes0mm/eicrecon.uncalibrated.root'
+    params:
+        slope='-PBEMC:EcalBarrelScFiCalibration:slope=1.0 ',
+        # Imaging cluster arguments are irrelevant for the CALOROC-based plot this pipeline produces.
+        input_abs=lambda wc, input: os.path.abspath(input.simulation),
+        output_abs=lambda wc, output: os.path.abspath(output[0])
+    shell:
+        '''
+source /opt/detector/epic-main/bin/thisepic.sh
+#source EICrecon/bin/eicrecon-this.sh
+cd $( dirname {params.output_abs} )
+eicrecon -Pdd4hep:xml_files=epic_craterlake.xml -Ppodio:output_file=eicrecon.uncalibrated.root -Ppodio:output_collections=EventHeader,\
+MCParticles,\
+EcalBarrelScFiPAttenuatedHitContributions,\
+EcalBarrelScFiNAttenuatedHitContributions,\
+EcalBarrelScFiPNpeHits,\
+EcalBarrelScFiNNpeHits,\
+EcalBarrelScFiPNpeHitContributions,\
+EcalBarrelScFiPPulses,\
+EcalBarrelScFiNPulses,\
+EcalBarrelScFiProtoClusters,\
+EcalBarrelScFiClustersWithoutShapes,\
+EcalBarrelScFiRawHitLinks,\
+EcalBarrelScFiRawHits,\
+EcalBarrelScFiRecHits,\
+EcalBarrelScFiPCALOROCHits,\
+EcalBarrelScFiNCALOROCHits,\
+EcalBarrelScFiClusters,\
+EcalBarrelScFiPCALOROCHits \
+{params.slope} \
+{params.input_abs}
+        '''
+
+rule compile_writeCALOROC:
+    input: 'script/writeCALOROCToTxt.C'
+    output:
+        so='script/writeCALOROCToTxt_C.so',
+        d='script/writeCALOROCToTxt_C.d'
+    shell: "root -b -l -q -e '.L {input}+'"
+
+rule compile_attCor:
+    input: 'script/AttCor.C'
+    output:
+        so='script/AttCor_C.so',
+        d='script/AttCor_C.d'
+    shell: "root -b -l -q -e '.L {input}+'"
+
+rule writeCALOROC2Txt:
+    input:
+        source=f'{EICRECON_DIR}/Single_energy2000_20000/gamma/id{{id1}}_{{id2}}/zRes0mm/eicrecon.uncalibrated.root',
+        script='script/writeCALOROCToTxt.C',
+        lib_so='script/writeCALOROCToTxt_C.so',
+        lib_d='script/writeCALOROCToTxt_C.d'
+    output:
+        'tmp/VarCALOROC_UncalibratedScFi_id{id1}_{id2}.txt'
+    shell:
+        r'''
+        root -b -l -q '{input.script}+("{input.source}","{output}")'
+        '''
+
+rule attCor:
+    input:
+        data='tmp/VarCALOROC_UncalibratedScFi_id{id1}_{id2}.txt',
+        script='script/AttCor.C',
+        lib_so='script/AttCor_C.so',
+        lib_d='script/AttCor_C.d'
+    output:
+        'tmp/CALOROCCluster_UncalibratedScFi_id{id1}_{id2}.txt'
+    shell:
+        r'''
+        root -b -l -q '{input.script}+("P","{input.data}","{output}",80,100)'
+        '''
+
+rule appendTxt:
+    input:
+        expand('tmp/CALOROCCluster_UncalibratedScFi_id{id1}_{id2}.txt',
+               zip,
+               id1=[r[0] for r in ID_RANGES],
+               id2=[r[1] for r in ID_RANGES])
+    output:
+        'tmp/CALOROCCluster_UncalibratedScFi_summed.txt'
+    shell: 'cat {input} > {output}'
+
+rule plot_uncalibrated_caloroc_cluster:
+    input:
+        data='tmp/CALOROCCluster_UncalibratedScFi_summed.txt',
+        script='script/plotERecoVsETruth.py'
+    output:
+        png='plot/theta80_100/gamma/zRes0mm/UncalibratedERecoVsETruth_CALOROCCluster_Single_energy2000_20000.png',
+        txt='plot/theta80_100/gamma/zRes0mm/UncalibratedERecoVsETruth_CALOROCCluster_Single_energy2000_20000.txt'
+    params:
+        pdg=22,
+        title=r'Single 0.01 < E < 20.00 GeV $\\gamma$, 80 < $\\theta$ < 100 deg, MC cluster and CALOROC',
+        e_truth_min=0.01,
+        e_truth_max=20.0,
+        e_reco_min=0.001,
+        e_reco_max=2.1,
+        ytitle=r'$\\sum Att. Cor. NPE$ (GeV)'
+    shell:
+        r'''
+        mkdir -p "$(dirname "{output.png}")"
+        python -m script.plotERecoVsETruth \
+            "{output.png}" "{input.data}" {params.pdg} "{params.title}" \
+            --eTruthMin {params.e_truth_min} --eTruthMax {params.e_truth_max} \
+            --eRecoMin {params.e_reco_min} --eRecoMax {params.e_reco_max} \
+            --txt "{output.txt}" --ytitle "{params.ytitle}"
+        '''
