@@ -1,9 +1,2 @@
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0000.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0001.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0002.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0003.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0004.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0005.eicrecon.edm4eic.root
-root://dtn-eic.jlab.org///volatile/eic/EPIC/RECO/25.04.1/epic_craterlake/SIDIS/D0_ABCONV/pythia8.306-1.1/10x100/q2_1/hiDiv/pythia8.306-1.1_D0_10x100_hiDiv_q2_1_run01.0006.eicrecon.edm4eic.root
-
-
+root://epicxrd1.sdcc.bnl.gov:1095//eic/EPIC//RECO/26.04.1/epic_craterlake/SIDIS/D0_ABCONV/HFsim-PYTHIA/pythia8.312-2.0/ep/10x130/q2_1/pythia8.312-2.0_D0_ep_10x130_q2_1_ab_run0000.0000.eicrecon.edm4eic.root
+root://epicxrd1.sdcc.bnl.gov:1095//eic/EPIC//RECO/26.04.1/epic_craterlake/SIDIS/D0_ABCONV/HFsim-PYTHIA/pythia8.312-2.0/ep/10x130/q2_1/pythia8.312-2.0_D0_ep_10x130_q2_1_ab_run0000.0001.eicrecon.edm4eic.root
