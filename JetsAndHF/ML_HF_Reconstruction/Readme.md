@@ -14,8 +14,6 @@ pip install hipe4ml (Ubuntu) or brew install libomp (Mac)
 2. This requires signal and background features
 Run D0 reconstruction for D0 Sample and DIS Samples
 Put the output root files in the directories: D0_Sample and DIS_Sample 
-3. Go to the directory: ML_model_ePIC (I added the root files from ep 10x100, Q^2>1 GeV^2, Campaign: 25.04.1 as an example)
-source Run_ML_withData.sh
 ```
 
 ## Tutorial for D0 Reconstruction with ML in the ePIC experiment
