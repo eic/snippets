@@ -32,7 +32,7 @@
 #include "fmt/core.h"
 
 ///! Default input file list
-const std::string DefaultInFileList = "filelists/files26060.py8ncdis10x100q100t1000.list";
+const std::string DefaultInFileList = "filelists/files26071.py8ncdis10x100q100t1000.list";
 
 ///! Default no. of files
 const std::size_t DefaultNFiles = 1000;
