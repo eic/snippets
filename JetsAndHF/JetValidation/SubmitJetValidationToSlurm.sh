@@ -26,7 +26,4 @@
 eic_shell=$HOME/.bin/eic-shell # NOTE edit me!
 version=26.07.1-stable # NOTE edit me!
 
-# TEST
-num_files=20
-
-$eic_shell -v $version -- $PWD/RunJetValidationInShell.sh -u $num_files
+$eic_shell -v $version -- $PWD/RunJetValidationInShell.sh
