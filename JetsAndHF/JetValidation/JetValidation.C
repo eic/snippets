@@ -7,9 +7,11 @@
 //!   standalone to generate plots for validation.
 //!
 //! \usage In eic-shell:
-//!     root -b -q JetValidation.C'(<input file list>, \
+//!     root -b -q JetValidation.C'(<output path>, \
+//!                                 <output suffix>, \
+//!                                 <input file list>, \
 //!                                 <n files to read>, \
-//!                                 <output path>)'
+//!                                 <n events to process>)'
 // ============================================================================
 
 #include <edm4eic/EDM4eicVersion.h>
@@ -31,14 +33,22 @@
 #include "fmt/color.h"
 #include "fmt/core.h"
 
-///! Default input file list
+///! Default output file path.
+const std::string DefaultOutPath = ".";
+
+///! Default output file suffix.
+const std::string DefaultOutSuffix = "files26071.py8ncdis10x100q100t1000";
+
+///! Default input file list.
 const std::string DefaultInFileList = "filelists/files26071.py8ncdis10x100q100t1000.list";
 
-///! Default no. of files
-const std::size_t DefaultNFiles = 1000;
+///! Default no. of files to process.
+///! -1 means process all files.
+const std::int32_t DefaultNFiles = -1;
 
-///! Default output file path
-const std::string DefaultOutPath = ".";
+///! Default total no. of events to process.
+///! -1 means process all events.
+const std::int32_t DefaultNEvents = -1;
 
 // ----------------------------------------------------------------------------
 // Does a branch exist?
@@ -62,14 +72,18 @@ bool branchExists(TTree* tree, const std::string& branch) {
 /*! Process input files to generate a set of reconstructed,
  *! generated jet distributions and save them as PNGs.
  *!
- *! \param[in]  filelist     Input filelist to use
- *! \param[in]  n_files      Number of files to read
- *! \param[out] results_path Location to save PNGs to
+ *! \param[out] results_path   Location to save PNGs to
+ *! \param[out] results_suffix Suffix to append to output files
+ *! \param[in]  filelist       Input filelist to use
+ *! \param[in]  n_files        Number of files to read
+ *! \param[in]  n_events       Number of total events to process
  */
 int JetValidation(
+  const std::string& results_path = DefaultOutPath,
+  const std::string& results_suffix = DefaultOutSuffix,
   const std::string& filelist = DefaultInFileList,
-  const std::size_t n_files = DefaultNFiles,
-  const std::string& results_path = DefaultOutPath
+  const std::int32_t n_files = DefaultNFiles,
+  const std::int32_t n_events = DefaultNEvents
 ) {
 
   const bool PRINT = true;
@@ -82,12 +96,12 @@ int JetValidation(
 
   // Load input files
   std::string file;
-  std::size_t i_file = 0;
+  std::int32_t i_file = 0;
   std::vector<std::string> rec_files;
   while (std::getline(mylist, file)) {
     rec_files.push_back(file);
     ++i_file;
-    if (i_file == n_files) {
+    if ((n_files > -1) && (i_file == n_files)) {
       break;
     }
   }
@@ -319,7 +333,10 @@ int JetValidation(
   int NEVENTS = 0;
   while(tree_reader.Next()) {
 
-    if(NEVENTS%10000 == 0) cout << "Events Processed: " << NEVENTS << endl;
+    if ((n_events > -1) && (NEVENTS == n_events)) {
+      break;
+    }
+    if (NEVENTS%10000 == 0) cout << "Events Processed: " << NEVENTS << endl;
 
     counter->Fill(0);
 
@@ -688,7 +705,6 @@ int JetValidation(
 
     NEVENTS++;
   }
-
   
   gStyle->SetOptStat(0);
   ////////////////////////  Reconstructed Jets Plots  ////////////////////////
@@ -713,7 +729,7 @@ legend1->Draw();
 
 
   gPad->SetLogy();
-  if(PRINT) c1->Print((results_path+"/numberRecoJets.png").c_str()); // Number of reconstructed jets per event with energy > 5 GeV and Abs(eta) < 2.5
+  if(PRINT) c1->Print((results_path+"/numberRecoJets."+results_suffix+".png").c_str()); // Number of reconstructed jets per event with energy > 5 GeV and Abs(eta) < 2.5
    delete c1;
 
   // Reco Energy
@@ -736,7 +752,7 @@ legend2->AddEntry(recoChargedJetENoElecHist, "No Electrons", "l");
 legend2->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c2->Print((results_path+"/recoJetEnergy.png").c_str()); // Energy spectrum of reconstructed jets with Abs(eta) < 2.5
+  if(PRINT) c2->Print((results_path+"/recoJetEnergy."+results_suffix+".png").c_str()); // Energy spectrum of reconstructed jets with Abs(eta) < 2.5
 
     delete c2;
   // Reco Eta
@@ -760,7 +776,7 @@ legend3->AddEntry(recoChargedJetEtaECutNoElecHist, "No Electrons", "l");
 legend3->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c3->Print((results_path+"/recoJetEta.png").c_str()); // Eta spectrum of reconstructed jets with energy > 5 GeV
+  if(PRINT) c3->Print((results_path+"/recoJetEta."+results_suffix+".png").c_str()); // Eta spectrum of reconstructed jets with energy > 5 GeV
     delete c3;
 
   // Reco Area
@@ -785,7 +801,7 @@ legend3->Draw();
     legend3_1->Draw();
 
     gPad->SetLogy();
-    if(PRINT) c3_1->Print((results_path+"/recoJetArea.png").c_str()); // Area spectrum of reconstructed jets with energy > 5 GeV
+    if(PRINT) c3_1->Print((results_path+"/recoJetArea."+results_suffix+".png").c_str()); // Area spectrum of reconstructed jets with energy > 5 GeV
       delete c3_1;
    }
 
@@ -798,7 +814,7 @@ legend3->Draw();
   recoChargedJetEvsEtaHist->Draw("COLZ");
   recoChargedJetEvsEtaHist->SetTitle("Reconstructed Jet Energy Vs Eta;Eta;Energy [GeV]");
   gPad->SetLogz();
-  if(PRINT) c4->Print((results_path+"/recoJetEnergyvsEta.png").c_str()); // Energy vs eta of reconstructed jets
+  if(PRINT) c4->Print((results_path+"/recoJetEnergyvsEta."+results_suffix+".png").c_str()); // Energy vs eta of reconstructed jets
 
   // Reco E Vs Area
   if (useNewEDM) {
@@ -810,7 +826,7 @@ legend3->Draw();
     recoChargedJetEvsAreaHist->Draw("COLZ");
     recoChargedJetEvsAreaHist->SetTitle("Reconstructed Jet Energy Vs Area;Area;Energy [GeV]");
     gPad->SetLogz();
-    if(PRINT) c4_1->Print((results_path+"/recoJetEnergyvsArea.png").c_str()); // Energy vs area of reconstructed jets
+    if(PRINT) c4_1->Print((results_path+"/recoJetEnergyvsArea."+results_suffix+".png").c_str()); // Energy vs area of reconstructed jets
   }
 
   // Reco Phi Vs Eta
@@ -822,7 +838,7 @@ legend3->Draw();
   recoChargedJetPhiVsEtaECutHist->Draw("COLZ");
   recoChargedJetPhiVsEtaECutHist->SetTitle("Reconstructed Jet Phi Vs Eta (E > 5);Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c5->Print((results_path+"/recoJetPhivsEta.png").c_str()); // Phi vs eta of reconstructed jets
+  if(PRINT) c5->Print((results_path+"/recoJetPhivsEta."+results_suffix+".png").c_str()); // Phi vs eta of reconstructed jets
 
   // Num Particles Per Reco Jet
   TCanvas *c6 = new TCanvas("c6","Number Constituents Per Reco Jet",800,600);
@@ -844,7 +860,7 @@ legend6->AddEntry(numRecoChargedJetPartsNoElecHist, "No Electrons", "l");
 legend6->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c6->Print((results_path+"/numConstituentsPerRecoJet.png").c_str()); // Number of constituents in reconstructed jets
+  if(PRINT) c6->Print((results_path+"/numConstituentsPerRecoJet."+results_suffix+".png").c_str()); // Number of constituents in reconstructed jets
 
   // Reco Part Energy
   TCanvas *c7 = new TCanvas("c7","Reco Jet Constituent Momentum",800,600);
@@ -866,7 +882,7 @@ legend6->Draw();
   legend7->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c7->Print((results_path+"/recoJetConstituentMomentum.png").c_str()); // Momentum of reconstructed jet constituents
+  if(PRINT) c7->Print((results_path+"/recoJetConstituentMomentum."+results_suffix+".png").c_str()); // Momentum of reconstructed jet constituents
 
   // Reco Part Eta
   TCanvas *c8 = new TCanvas("c8","Reco Jet Constituent Eta",800,600);
@@ -889,7 +905,7 @@ legend6->Draw();
   legend8->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c8->Print((results_path+"/recoJetConstituentEta.png").c_str()); // Eta of reconstructed jet constituents
+  if(PRINT) c8->Print((results_path+"/recoJetConstituentEta."+results_suffix+".png").c_str()); // Eta of reconstructed jet constituents
 
   // Reco Part P Vs Eta
   TCanvas *c9 = new TCanvas("c9","Reco Jet Constituent Momentum Vs Eta",800,600);
@@ -900,7 +916,7 @@ legend6->Draw();
   recoChargedJetPartPvsEtaHist->Draw("COLZ");
   recoChargedJetPartPvsEtaHist->SetTitle("Reconstructed Jet Constituent Momentum Vs Eta;Eta;Momentum [GeV/c]");
   gPad->SetLogz();
-  if(PRINT) c9->Print((results_path+"/recoJetConstituentMomentumVsEta.png").c_str()); // Momentum vs eta of reconstructed jet constituents
+  if(PRINT) c9->Print((results_path+"/recoJetConstituentMomentumVsEta."+results_suffix+".png").c_str()); // Momentum vs eta of reconstructed jet constituents
 
   // Reco Part Phi Vs Eta
   TCanvas *c10 = new TCanvas("c10","Reco Jet Constituent Phi Vs Eta",800,600);
@@ -911,7 +927,7 @@ legend6->Draw();
   recoChargedJetPartPhiVsEtaHist->Draw("COLZ");
   recoChargedJetPartPhiVsEtaHist->SetTitle("Reconstructed Jet Constituent Phi Vs Eta;Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c10->Print((results_path+"/recoJetConstituentPhiVsEta.png").c_str()); // Phi vs eta of reconstructed jet constituents
+  if(PRINT) c10->Print((results_path+"/recoJetConstituentPhiVsEta."+results_suffix+".png").c_str()); // Phi vs eta of reconstructed jet constituents
 
   // Reco Constituent Pairwise delta R
   TCanvas *c11 = new TCanvas("c11","Reco Jet Constituent Pairwise Delta R",800,600);
@@ -923,7 +939,7 @@ legend6->Draw();
   recoChargedJetPartPairwiseDeltaRHist->SetTitle("Pairwise Constituent Delta R;Delta R");
   recoChargedJetPartPairwiseDeltaRHist->GetXaxis()->SetRangeUser(0,0.5);
   gPad->SetLogy();
-  if(PRINT) c11->Print((results_path+"/recoJetConstituentPairwiseDR.png").c_str()); // Distance between each pair of constituents in reconstructed jets
+  if(PRINT) c11->Print((results_path+"/recoJetConstituentPairwiseDR."+results_suffix+".png").c_str()); // Distance between each pair of constituents in reconstructed jets
 
   // Reco E Vs Eta No Electron Jets
   TCanvas *c12 = new TCanvas("c12","Reco Jet E Vs Eta (No Electrons)",800,600);
@@ -934,7 +950,7 @@ legend6->Draw();
   recoChargedJetEvsEtaNoElecHist->Draw("COLZ");
   recoChargedJetEvsEtaNoElecHist->SetTitle("Reconstructed Jet Energy Vs Eta (No Electrons);Eta;Energy [GeV]");
   gPad->SetLogz();
-  if(PRINT) c12->Print((results_path+"/recoJetEnergyVsEtaNoElectron.png").c_str()); // Reconstructed jet energy - no jets containing electrons included
+  if(PRINT) c12->Print((results_path+"/recoJetEnergyVsEtaNoElectron."+results_suffix+".png").c_str()); // Reconstructed jet energy - no jets containing electrons included
 
   // Reco Phi Vs Eta No Electron Jets
   TCanvas *c13 = new TCanvas("c13","Reco Jet Phi Vs Eta (No Electrons)",800,600);
@@ -945,7 +961,7 @@ legend6->Draw();
   recoChargedJetPhiVsEtaECutNoElecHist->Draw("COLZ");
   recoChargedJetPhiVsEtaECutNoElecHist->SetTitle("Reconstructed Jet Phi Vs Eta (E > 5) (No Electrons);Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c13->Print((results_path+"/recoJetPhiVsEtaNoElectron.png").c_str()); // Reconstructed Jet phi vs eta - no jets containing electrons included
+  if(PRINT) c13->Print((results_path+"/recoJetPhiVsEtaNoElectron."+results_suffix+".png").c_str()); // Reconstructed Jet phi vs eta - no jets containing electrons included
 
   // Reco Part P Vs Eta No Electron Jets
   TCanvas *c14 = new TCanvas("c14","Reco Jet Constituent Momentum Vs Eta (No Electrons)",800,600);
@@ -956,7 +972,7 @@ legend6->Draw();
   recoChargedJetPartPvsEtaNoElecHist->Draw("COLZ");
   recoChargedJetPartPvsEtaNoElecHist->SetTitle("Reconstructed Jet Constituent Momentum Vs Eta (No Electrons);Eta;Momentum [GeV/c]");
   gPad->SetLogz();
-  if(PRINT) c14->Print((results_path+"/recoJetConstituentMomentumVsEtaNoElectron.png").c_str()); // Reconstructed jet constituent momentum vs eta - no jets containing electrons included
+  if(PRINT) c14->Print((results_path+"/recoJetConstituentMomentumVsEtaNoElectron."+results_suffix+".png").c_str()); // Reconstructed jet constituent momentum vs eta - no jets containing electrons included
 
   // Reco Part Phi Vs Eta No Electron Jets
   TCanvas *c15 = new TCanvas("c15","Reco Jet Constituent Phi Vs Eta (No Electrons)",800,600);
@@ -967,7 +983,7 @@ legend6->Draw();
   recoChargedJetPartPhiVsEtaNoElecHist->Draw("COLZ");
   recoChargedJetPartPhiVsEtaNoElecHist->SetTitle("Reconstructed Jet Constituent Phi Vs Eta (No Electrons);Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c15->Print((results_path+"/recoJetConstituentPhiVsEtaNoElectron.png").c_str()); // Reconstructed jet constituent phi vs eta - no jets containing electrons included
+  if(PRINT) c15->Print((results_path+"/recoJetConstituentPhiVsEtaNoElectron."+results_suffix+".png").c_str()); // Reconstructed jet constituent phi vs eta - no jets containing electrons included
 
   
   ////////////////////////  Generated Jets Plots  ////////////////////////
@@ -992,7 +1008,7 @@ legend6->Draw();
   legend16->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c16->Print((results_path+"/numberGenJets.png").c_str()); // Number of generator jets per event with energy > 5 GeV and Abs(eta) < 2.5
+  if(PRINT) c16->Print((results_path+"/numberGenJets."+results_suffix+".png").c_str()); // Number of generator jets per event with energy > 5 GeV and Abs(eta) < 2.5
 
   // Gen Energy
   TCanvas *c17 = new TCanvas("c17","Gen Jet Energy",800,600);
@@ -1014,7 +1030,7 @@ legend6->Draw();
   legend17->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c17->Print((results_path+"/genJetEnergy.png").c_str()); // Energy spectrum of generated jets with Abs(eta) < 2.5
+  if(PRINT) c17->Print((results_path+"/genJetEnergy."+results_suffix+".png").c_str()); // Energy spectrum of generated jets with Abs(eta) < 2.5
 
   // Gen Eta
   TCanvas *c18 = new TCanvas("c18","Gen Jet Eta",800,600);
@@ -1037,7 +1053,7 @@ legend6->Draw();
   legend18->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c18->Print((results_path+"/genJetEta.png").c_str()); // Eta spectrum of generator jets with energy > 5 GeV
+  if(PRINT) c18->Print((results_path+"/genJetEta."+results_suffix+".png").c_str()); // Eta spectrum of generator jets with energy > 5 GeV
 
   // Gen Area
   if(useNewEDM) {
@@ -1061,7 +1077,7 @@ legend6->Draw();
     legend18_1->Draw();
 
     gPad->SetLogy();
-    if(PRINT) c18_1->Print((results_path+"/genJetArea.png").c_str()); // Area spectrum of generator jets with energy > 5 GeV
+    if(PRINT) c18_1->Print((results_path+"/genJetArea."+results_suffix+".png").c_str()); // Area spectrum of generator jets with energy > 5 GeV
   }
 
   // Gen E Vs Eta
@@ -1073,7 +1089,7 @@ legend6->Draw();
   genChargedJetEvsEtaHist->Draw("COLZ");
   genChargedJetEvsEtaHist->SetTitle("Generator Jet Energy Vs Eta;Eta;Energy [GeV]");
   gPad->SetLogz();
-  if(PRINT) c19->Print((results_path+"/genJetEnergyvsEta.png").c_str()); // Energy vs eta of generator jets
+  if(PRINT) c19->Print((results_path+"/genJetEnergyvsEta."+results_suffix+".png").c_str()); // Energy vs eta of generator jets
 
   // Gen E Vs Area
   if(useNewEDM) {
@@ -1085,7 +1101,7 @@ legend6->Draw();
     genChargedJetEvsAreaHist->Draw("COLZ");
     genChargedJetEvsAreaHist->SetTitle("Generator Jet Energy Vs Area;Area;Energy [GeV]");
     gPad->SetLogz();
-    if(PRINT) c19_1->Print((results_path+"/genJetEnergyvsArea.png").c_str()); // Energy vs area of generator jets
+    if(PRINT) c19_1->Print((results_path+"/genJetEnergyvsArea."+results_suffix+".png").c_str()); // Energy vs area of generator jets
   }
 
   // Gen Phi Vs Eta
@@ -1097,7 +1113,7 @@ legend6->Draw();
   genChargedJetPhiVsEtaECutHist->Draw("COLZ");
   genChargedJetPhiVsEtaECutHist->SetTitle("Generator Jet Phi Vs Eta (E > 5);Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c20->Print((results_path+"/genJetPhiVsEta.png").c_str()); // Phi vs eta of generator jets
+  if(PRINT) c20->Print((results_path+"/genJetPhiVsEta."+results_suffix+".png").c_str()); // Phi vs eta of generator jets
 
   // Num Particles Per Gen Jet
   TCanvas *c21 = new TCanvas("c21","Number Constituents Per Gen Jet",800,600);
@@ -1119,7 +1135,7 @@ legend6->Draw();
   legend21->AddEntry(numGenChargedJetPartsNoElecHist, "No Electrons", "l");
   legend21->Draw();
   gPad->SetLogy();
-  if(PRINT) c21->Print((results_path+"/numConstituentsPerGenJet.png").c_str()); // Number of constituents in generator jets
+  if(PRINT) c21->Print((results_path+"/numConstituentsPerGenJet."+results_suffix+".png").c_str()); // Number of constituents in generator jets
 
   // Gen Part Momentum
   TCanvas *c22 = new TCanvas("c22","Gen Jet Constituent Momentum",800,600);
@@ -1142,7 +1158,7 @@ legend6->Draw();
   legend22->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c22->Print((results_path+"/genJetConstituentMomentum.png").c_str()); // Momentum of generator jet constituents
+  if(PRINT) c22->Print((results_path+"/genJetConstituentMomentum."+results_suffix+".png").c_str()); // Momentum of generator jet constituents
 
   // Gen Part Eta
   TCanvas *c23 = new TCanvas("c23","Gen Jet Constituent Eta",800,600);
@@ -1165,7 +1181,7 @@ legend6->Draw();
   legend23->Draw();
 
   gPad->SetLogy();
-  if(PRINT) c23->Print((results_path+"/genJetConstituentEta.png").c_str()); // Eta of generator jet constituents
+  if(PRINT) c23->Print((results_path+"/genJetConstituentEta."+results_suffix+".png").c_str()); // Eta of generator jet constituents
 
   // Gen Part P Vs Eta
   TCanvas *c24 = new TCanvas("c24","Gen Jet Constituent Momentum Vs Eta",800,600);
@@ -1176,7 +1192,7 @@ legend6->Draw();
   genChargedJetPartPvsEtaHist->Draw("COLZ");
   genChargedJetPartPvsEtaHist->SetTitle("Generator Jet Constituent Momentum Vs Eta;Eta;Momentum [GeV/c]");
   gPad->SetLogz();
-  if(PRINT) c24->Print((results_path+"/genJetConstituentMomentumVsEta.png").c_str()); // Momentum vs eta of generator jet constituents
+  if(PRINT) c24->Print((results_path+"/genJetConstituentMomentumVsEta."+results_suffix+".png").c_str()); // Momentum vs eta of generator jet constituents
 
   // Gen Part Phi Vs Eta
   TCanvas *c25 = new TCanvas("c25","Gen Jet Constituent Phi Vs Eta",800,600);
@@ -1187,7 +1203,7 @@ legend6->Draw();
   genChargedJetPartPhiVsEtaHist->Draw("COLZ");
   genChargedJetPartPhiVsEtaHist->SetTitle("Generator Jet Constituent Phi Vs Eta;Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c25->Print((results_path+"/genJetConstituentPhiVsEta.png").c_str()); // Phi vs eta of generator jet constituents
+  if(PRINT) c25->Print((results_path+"/genJetConstituentPhiVsEta."+results_suffix+".png").c_str()); // Phi vs eta of generator jet constituents
 
   // Gen Constituent Pairwise delta R
   TCanvas *c26 = new TCanvas("c26","Gen Jet Constituent Pairwise Delta R",800,600);
@@ -1199,7 +1215,7 @@ legend6->Draw();
   genChargedJetPartPairwiseDeltaRHist->SetTitle("Generator Jet Pairwise Constituent Delta R;Delta R");
   genChargedJetPartPairwiseDeltaRHist->GetXaxis()->SetRangeUser(0,0.5);
   gPad->SetLogy();
-  if(PRINT) c26->Print((results_path+"/genJetConstituentPairwiseDR.png").c_str()); // Distance between each pair of constituents in generator jets
+  if(PRINT) c26->Print((results_path+"/genJetConstituentPairwiseDR."+results_suffix+".png").c_str()); // Distance between each pair of constituents in generator jets
 
   // Gen E Vs Eta No Electron Jets
   TCanvas *c27 = new TCanvas("c27","Gen Jet E Vs Eta (No Electrons)",800,600);
@@ -1210,7 +1226,7 @@ legend6->Draw();
   genChargedJetEvsEtaNoElecHist->Draw("COLZ");
   genChargedJetEvsEtaNoElecHist->SetTitle("Generator Jet Energy Vs Eta (No Electrons);Eta;Energy [GeV]");
   gPad->SetLogz();
-  if(PRINT) c27->Print((results_path+"/genJetEnergyVsEtaNoElectron.png").c_str()); // Generator jet energy vs eta - no jets containing electrons included
+  if(PRINT) c27->Print((results_path+"/genJetEnergyVsEtaNoElectron."+results_suffix+".png").c_str()); // Generator jet energy vs eta - no jets containing electrons included
 
   // Gen Phi Vs Eta No Electron Jets
   TCanvas *c28 = new TCanvas("c28","Gen Jet Phi Vs Eta (No Electrons)",800,600);
@@ -1221,7 +1237,7 @@ legend6->Draw();
   genChargedJetPhiVsEtaECutNoElecHist->Draw("COLZ");
   genChargedJetPhiVsEtaECutNoElecHist->SetTitle("Generator Jet Phi Vs Eta (E > 5) (No Electrons);Eta;Phi");
   gPad->SetLogz();
-  if(PRINT) c28->Print((results_path+"/genJetPhiVsEtaNoElectron.png").c_str()); // Generator Jet phi vs eta - no jets containing electrons included
+  if(PRINT) c28->Print((results_path+"/genJetPhiVsEtaNoElectron."+results_suffix+".png").c_str()); // Generator Jet phi vs eta - no jets containing electrons included
 
   // Gen Part P Vs Eta No Electron Jets
   TCanvas *c29 = new TCanvas("c29","Gen Jet Constituent Momentum Vs Eta (No Electrons)",800,600);
@@ -1232,7 +1248,7 @@ legend6->Draw();
   genChargedJetPartPvsEtaNoElecHist->Draw("COLZ");
   genChargedJetPartPvsEtaNoElecHist->SetTitle("Generator Jet Constituent Momentum Vs Eta (No Electrons);Eta;Momentum [GeV/c]");
   gPad->SetLogz();
-  if(PRINT) c29->Print((results_path+"/genJetConstituentMomentumVsEtaNoElectron.png").c_str()); // Generator jet constituent momentum vs eta - no jets containing electrons included
+  if(PRINT) c29->Print((results_path+"/genJetConstituentMomentumVsEtaNoElectron."+results_suffix+".png").c_str()); // Generator jet constituent momentum vs eta - no jets containing electrons included
 
   // Gen Part Phi Vs Eta No Electron Jets
   TCanvas *c30 = new TCanvas("c30","Gen Jet Constituent Phi Vs Eta (No Electrons)",800,600);
@@ -1244,7 +1260,7 @@ legend6->Draw();
   genChargedJetPartPhiVsEtaNoElecHist->SetTitle("Generator Jet Constituent Phi Vs Eta (No Electrons);Eta;Phi");
   gPad->SetLogz();
   //c30->Print((results_path+"/recoJetEvsEta.png").c_str());
-  if(PRINT) c30->Print((results_path+"/genJetConstituentPhiVsEtaNoElectron.png").c_str()); // Generator jet constituent phi vs eta - no jets containing electrons included
+  if(PRINT) c30->Print((results_path+"/genJetConstituentPhiVsEtaNoElectron."+results_suffix+".png").c_str()); // Generator jet constituent phi vs eta - no jets containing electrons included
 
   
   ////////////////////////  Matched Jets Plots  ////////////////////////
@@ -1259,7 +1275,7 @@ legend6->Draw();
   //matchJetDeltaRBackHist->Draw("HISTSAME");
   matchJetDeltaRHist->SetTitle("Matched Gen - Reco Jet Delta R;Delta R");
   gPad->SetLogy();
-  if(PRINT) c31->Print((results_path+"/genRecoJetDeltaR.png").c_str()); // Distance between closest generated and reconstructed jet pair
+  if(PRINT) c31->Print((results_path+"/genRecoJetDeltaR."+results_suffix+".png").c_str()); // Distance between closest generated and reconstructed jet pair
 
   // Matched Reco Vs Gen Eta
   TCanvas *c32 = new TCanvas("c32","Reco Vs Gen Eta",800,600);
@@ -1270,7 +1286,7 @@ legend6->Draw();
   recoVsGenChargedJetEtaHist->Draw("COLZ");
   recoVsGenChargedJetEtaHist->SetTitle("Reconstructed Vs Generator Jet Eta;Gen Eta;Reco Eta");
   gPad->SetLogz();
-  if(PRINT) c32->Print((results_path+"/matchedRecoVsGenJetEta.png").c_str()); // Matched Reconstructed Vs Generator Jet eta
+  if(PRINT) c32->Print((results_path+"/matchedRecoVsGenJetEta."+results_suffix+".png").c_str()); // Matched Reconstructed Vs Generator Jet eta
 
   // Matched Reco Vs Gen Phi
   TCanvas *c33 = new TCanvas("c33","Reco Vs Gen Phi",800,600);
@@ -1281,7 +1297,7 @@ legend6->Draw();
   recoVsGenChargedJetPhiHist->Draw("COLZ");
   recoVsGenChargedJetPhiHist->SetTitle("Reconstructed Vs Generator Jet Phi;Gen Phi;Reco Phi");
   gPad->SetLogz();
-  if(PRINT) c33->Print((results_path+"/matchedRecoVsGenJetPhi.png").c_str()); // Matched reconstructed vs generator jet phi
+  if(PRINT) c33->Print((results_path+"/matchedRecoVsGenJetPhi."+results_suffix+".png").c_str()); // Matched reconstructed vs generator jet phi
 
   // Matched Reco Vs Gen Area
   if(useNewEDM) {
@@ -1293,7 +1309,7 @@ legend6->Draw();
     recoVsGenChargedJetAreaHist->Draw("COLZ");
     recoVsGenChargedJetAreaHist->SetTitle("Reconstructed Vs Generator Jet Area;Gen Area;Reco Area");
     gPad->SetLogz();
-    if(PRINT) c33_1->Print((results_path+"/matchedRecoVsGenJetArea.png").c_str()); // Matched reconstructed vs generator jet area
+    if(PRINT) c33_1->Print((results_path+"/matchedRecoVsGenJetArea."+results_suffix+".png").c_str()); // Matched reconstructed vs generator jet area
   }
 
   // Matched Reco Vs Gen Energy
@@ -1312,7 +1328,7 @@ legend6->Draw();
   f2_34->Draw("SAME");
   f3_34->Draw("SAME");
   gPad->SetLogz();
-  if(PRINT) c34->Print((results_path+"/matchedRecoVsGenJetEnergy.png").c_str()); // Matched reconstructed vs generator jet energy
+  if(PRINT) c34->Print((results_path+"/matchedRecoVsGenJetEnergy."+results_suffix+".png").c_str()); // Matched reconstructed vs generator jet energy
 
   // Jet Res Vs Gen Eta
   TCanvas *c35 = new TCanvas("c35","Jet Res Vs Gen Eta",800,600);
@@ -1323,7 +1339,7 @@ legend6->Draw();
   jetResVsEtaHist->Draw("COLZ");
   jetResVsEtaHist->SetTitle("(Reco - Gen)/Gen Jet Energy Vs Gen Eta;Gen Eta;Res");
   gPad->SetLogz();
-  if(PRINT) c35->Print((results_path+"/matchedJetResolutionVsEta.png").c_str()); // Matched jet resolution vs generator jet eta
+  if(PRINT) c35->Print((results_path+"/matchedJetResolutionVsEta."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet eta
 
   // Jet Res Vs Gen E
   TCanvas *c36 = new TCanvas("c36","Jet Res Vs Gen E",800,600);
@@ -1334,7 +1350,7 @@ legend6->Draw();
   jetResVsEHist->Draw("COLZ");
   jetResVsEHist->SetTitle("(Reco - Gen)/Gen Jet Energy Vs Gen Energy;Gen E;Res");
   gPad->SetLogz();
-  if(PRINT) c36->Print((results_path+"/matchedJetResolutionVsEnergy.png").c_str()); // Matched jet resolution vs generator jet energy
+  if(PRINT) c36->Print((results_path+"/matchedJetResolutionVsEnergy."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy
 
   // Jet Res Vs Gen E Neg Eta
   TCanvas *c37 = new TCanvas("c37","Jet Res Vs Gen E (-2.5 < eta < -1.0)",800,600);
@@ -1345,7 +1361,7 @@ legend6->Draw();
   jetResVsENegEtaNoDupHist->Draw("COLZ");
   jetResVsENegEtaNoDupHist->SetTitle("(Reco - Gen)/Gen Jet Energy Vs Gen Energy (-2.5 < eta < -1.0) No Duplicate;Gen E;Res");
   gPad->SetLogz();
-  if(PRINT) c37->Print((results_path+"/matchedJetResolutionVsEnergyNegEta.png").c_str()); // Matched jet resolution vs generator jet energy -2.5 < eta < -1.0
+  if(PRINT) c37->Print((results_path+"/matchedJetResolutionVsEnergyNegEta."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy -2.5 < eta < -1.0
 
   // Jet Res Vs Gen E Mid Eta
   TCanvas *c38 = new TCanvas("c38","Jet Res Vs Gen E (-1.0 < eta < 1.0)",800,600);
@@ -1356,7 +1372,7 @@ legend6->Draw();
   jetResVsEMidEtaNoDupHist->Draw("COLZ");
   jetResVsEMidEtaNoDupHist->SetTitle("(Reco - Gen)/Gen Jet Energy Vs Gen Energy (-1.0 < eta < 1.0) No Duplicate;Gen E;Res");
   gPad->SetLogz();
-  if(PRINT) c38->Print((results_path+"/matchedJetResolutionVsEnergyMidEta.png").c_str()); // Matched jet resolution vs generator jet energy -1.0 < eta < 1.0
+  if(PRINT) c38->Print((results_path+"/matchedJetResolutionVsEnergyMidEta."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy -1.0 < eta < 1.0
     delete c38;
   // Jet Res Vs Gen E Pos Eta
   TCanvas *c39 = new TCanvas("c39","Jet Res Vs Gen E (1.0 < eta < 2.5)",800,600);
@@ -1367,7 +1383,7 @@ legend6->Draw();
   jetResVsEPosEtaNoDupHist->Draw("COLZ");
   jetResVsEPosEtaNoDupHist->SetTitle("(Reco - Gen)/Gen Jet Energy Vs Gen Energy (1.0 < eta < 2.5) No Duplicate;Gen E;Res");
   gPad->SetLogz();
-  if(PRINT) c39->Print((results_path+"/matchedJetResolutionVsEnergyPosEta.png").c_str()); // Matched jet resolution vs generator jet energy 1.0 < eta < 2.5
+  if(PRINT) c39->Print((results_path+"/matchedJetResolutionVsEnergyPosEta."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy 1.0 < eta < 2.5
   delete c39;
 
   
@@ -1426,7 +1442,7 @@ legend6->Draw();
 	  //cout << fA->GetParError(0) << " " << fA->GetParError(1) << " " << fA->GetParError(2) << endl;
 	}
     }
-  if(PRINT) c40->Print((results_path+"/matchedJetResolutionVsEnergyNegEtaFitSummary.png").c_str()); // Matched jet resolution vs generator jet energy -2.5 < eta < -1.0 fits
+  if(PRINT) c40->Print((results_path+"/matchedJetResolutionVsEnergyNegEtaFitSummary."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy -2.5 < eta < -1.0 fits
     delete c40;
 
   TCanvas *c41 = new TCanvas("c41","Mid Rapidity Fit Results",800,600);
@@ -1460,7 +1476,7 @@ legend6->Draw();
 	  //cout << fB->GetParError(0) << " " << fB->GetParError(1) << " " << fB->GetParError(2) << endl;
 	}
     }
-  if(PRINT) c41->Print((results_path+"/matchedJetResolutionVsEnergyMidEtaFitSummary.png").c_str()); // Matched jet resolution vs generator jet energy -1.0 < eta < 1.0 fits
+  if(PRINT) c41->Print((results_path+"/matchedJetResolutionVsEnergyMidEtaFitSummary."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy -1.0 < eta < 1.0 fits
     delete c41;
 
   TCanvas *c42 = new TCanvas("c42","Positive Rapidity Fit Results",800,600);
@@ -1494,7 +1510,7 @@ legend6->Draw();
 	  //cout << fC->GetParError(0) << " " << fC->GetParError(1) << " " << fC->GetParError(2) << endl;
 	}
     }
-  if(PRINT) c42->Print((results_path+"/matchedJetResolutionVsEnergyPosEtaFitSummary.png").c_str()); // Matched jet resolution vs generator jet energy 1.0 < eta < 2.5 fits
+  if(PRINT) c42->Print((results_path+"/matchedJetResolutionVsEnergyPosEtaFitSummary."+results_suffix+".png").c_str()); // Matched jet resolution vs generator jet energy 1.0 < eta < 2.5 fits
     delete c42;
   TCanvas *c43 = new TCanvas("c43","Positive JES/JER",800,600);
   c43->Clear();
@@ -1544,15 +1560,15 @@ legend6->Draw();
   gJESvsEPos->SetMarkerColor(seabornGreen);
 
   TLegend *legend = new TLegend(0.7,0.7,0.9,0.9); 
-legend->AddEntry(gJERvsENeg, "JER, (-2.5 < #eta < -1)", "p");
-legend->AddEntry(gJESvsENeg, "JES, (-2.5 < #eta < -1)","p");
-legend->AddEntry(gJERvsEMid, "JER, (-1 < #eta < 1)", "p");
-legend->AddEntry(gJESvsEMid, "JES, (-1 < #eta < 1)", "p");
-legend->AddEntry(gJERvsEPos, "JER, (1 < #eta < 2.5) ", "p");
-legend->AddEntry(gJESvsEPos, "JES, (1 < #eta < 2.5)", "p");
-legend->Draw();
+  legend->AddEntry(gJERvsENeg, "JER, (-2.5 < #eta < -1)", "p");
+  legend->AddEntry(gJESvsENeg, "JES, (-2.5 < #eta < -1)","p");
+  legend->AddEntry(gJERvsEMid, "JER, (-1 < #eta < 1)", "p");
+  legend->AddEntry(gJESvsEMid, "JES, (-1 < #eta < 1)", "p");
+  legend->AddEntry(gJERvsEPos, "JER, (1 < #eta < 2.5) ", "p");
+  legend->AddEntry(gJESvsEPos, "JES, (1 < #eta < 2.5)", "p");
+  legend->Draw();
 
-  if(PRINT) c43->Print((results_path+"/matchedJetScaleResolutionSummary.png").c_str()); // Matched jet JER/JES summary
+  if(PRINT) c43->Print((results_path+"/matchedJetScaleResolutionSummary."+results_suffix+".png").c_str()); // Matched jet JER/JES summary
     delete c43;
 
 delete mychain;
