@@ -1,0 +1,31 @@
+# ============================================================================= 
+# @file    config.yml
+# @authors Derek Anderson (derek.murphy.anderson@protonmail.com)
+# -----------------------------------------------------------------------------
+# @brief Top-level snakemake config. Defines
+#   slurm execution parameters, etc.
+# =============================================================================
+
+shell:
+  "/home/dereka/.bin/eic-shell" # <<< CHANGE ME
+
+did:
+  "epic:/RECO/26.07.1/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000"
+campaign:
+  "26071"
+dataset:
+  "py8ncdis10x100minq100t1000"
+
+nsplit:
+  100
+length:
+  2
+
+# TODO uncomment when ready
+#executor: "slurm"
+#jobs: 100
+#default-resources:
+#  slurm_account: "eic"
+#  slurm_partition: "ifarm"
+#  mem_mb: 16000
+#  runtime: 60

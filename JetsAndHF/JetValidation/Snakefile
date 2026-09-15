@@ -1,0 +1,32 @@
+# TODO HEADER WILL GO HERE
+
+configfile: "config.yml"
+
+rule jets_scripts:
+    output:
+        rucio=f"run/scripts/do_rucio.epic{config['campaign']}_{config['dataset']}.sh",
+        plots=f"run/scripts/do_plots.epic{config['campaign']}_{config['dataset']}.sh",
+    shell:
+        "python MakeRunScripts.py -d {config[did]} -c {config[campaign]} -a {config[dataset]} -s {config[nsplit]} -l {config[length]}"
+
+rule jets_lists:
+    output:
+        files=f"run/lists/files.split_{{split}}.epic{config['campaign']}_{config['dataset']}.list",
+    shell:
+        "{config[shell]} -- run/scripts/do_rucio.epic{config[campaign]}_{config[dataset]}.sh"
+
+rule jets_hists:
+    input:
+        splits=f"run/lists/files.split_{{split}}.epic{config['campaign']}_{config['dataset']}.list",
+    output:
+        hists=f"run/hists/hists.split_{{split}}.epic{config['campaign']}_{config['dataset']}.root",
+    shell:
+        "{config[shell]} -- run/scripts/do_hists.split_{wildcards.split}.epic{config[campaign]}_{config[dataset]}.sh"
+
+rule jets_plots:
+    input:
+        hists=f"run/hists/hists.split_{{split}}.epic{config['campaign']}_{config['dataset']}.root",
+    output:
+        plots=f"run/plots/{{plot}}.epic{config['campaign']}_{config['dataset']}.png",
+    shell:
+        "{config[shell]} -- run/scripts/do_plots.epic{config[campaign]}_{config[dataset]}.sh"
