@@ -20,8 +20,9 @@ sbatch SubmitJetValidationToSlurm.sh
 ### Files Used
 --------------
 
-Performed two tests: one before we switched the jet reconstruction output to
-`edm4eic::Jet` (26.05.0) and one after (26.06.0).
+Performed three tests: one before we switched the jet reconstruction output to
+`edm4eic::Jet` (26.05.0) and one after (26.06.0); and one using Snakemake
+(26.07.1).
 
 #### 26.05.0
 
@@ -50,6 +51,16 @@ Complete filelist saved to `filelists/files26060.py8ncdis10x100q100t1000.list`. 
     `examples/plots.26060_run000_0000to0000.tar.gz`.
   - One using first 1K files (`*_run000.0{000-999}.*`) and saved outputs to
     `examples/plots.26060_run000_0000to0999.tar.gz`.
+
+#### 26.07.1
+
+Utilized 26.07.1 Pythia8 NC DIS 10x100 (q2 = 100 - 1K) dataset for snakemake test:
+
+```bash
+rucio did content list epic:/RECO/26.07.1/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000
+```
+
+Complete filelist saved to `filelists/files26071.py8ncdis10x100q100t1000.list`.
 
 ### Plot File Names and Titles
 ------------------------------
