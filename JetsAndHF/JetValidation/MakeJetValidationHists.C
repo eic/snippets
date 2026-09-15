@@ -7,8 +7,7 @@
 //!   This macro generates histograms from eicrecon output.
 //!
 //! \usage In eic-shell:
-//!     root -b -q MakeJetValidationHists.C'(<output path>, \
-//!                                          <output suffix>, \
+//!     root -b -q MakeJetValidationHists.C'(<output root file>, \
 //!                                          <input file list>, \
 //!                                          <n files to read>, \
 //!                                          <n events to process>)'
@@ -28,11 +27,8 @@
 #include <string>
 #include <vector>
 
-///! Default output file path.
-const std::string DefaultOutPath = ".";
-
-///! Default output file suffix.
-const std::string DefaultOutSuffix = "files26071.py8ncdis10x100q100t1000";
+///! Default output file name.
+const std::string DefaultOutFile = "hists.files26071.py8ncdis10x100q100t1000.root";
 
 ///! Default input file list.
 const std::string DefaultInFileList = "filelists/files26071.py8ncdis10x100q100t1000.list";
@@ -67,15 +63,13 @@ bool branchExists(TTree* tree, const std::string& branch) {
 /*! Process input files to generate a set of reconstructed,
  *! generated jet histograms and save them to a ROOT file.
  *!
- *! \param[out] results_path   Location to save output file to
- *! \param[out] results_suffix Suffix to append to output file
- *! \param[in]  filelist       Input filelist to use
- *! \param[in]  n_files        Number of files to read
- *! \param[in]  n_events       Number of total events to process
+ *! \param[out] results_file Name of output file
+ *! \param[in]  filelist     Input filelist to use
+ *! \param[in]  n_files      Number of files to read
+ *! \param[in]  n_events     Number of total events to process
  */
 int MakeJetValidationHists(
-  const std::string& results_path = DefaultOutPath,
-  const std::string& results_suffix = DefaultOutSuffix,
+  const std::string& results_file = DefaultOutFile,
   const std::string& filelist = DefaultInFileList,
   const std::int32_t n_files = DefaultNFiles,
   const std::int32_t n_events = DefaultNEvents
@@ -214,7 +208,7 @@ int MakeJetValidationHists(
   TH1D *counter = new TH1D("counter","",10,0.,10.);
 
   // open output file
-  TFile* out_file = new TFile((results_path+"/hists."+results_suffix+".root").c_str(), "recreate");
+  TFile* out_file = new TFile(results_file.c_str(), "recreate");
   std::cout << "INFO: writing histograms to " << out_file->GetName() << std::endl;
 
   // Reco
