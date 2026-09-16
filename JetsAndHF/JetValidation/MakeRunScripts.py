@@ -66,7 +66,7 @@ class ScriptMaker:
         hist_files  = " ".join(self._make_split_names("run/hists/hists", "root"))
         merge_file  = f"run/hists/hist.merged.{self.suffix}.root"
         merge_comm  = f"hadd {merge_file} {hist_files}"
-        plot_comm   = f'root -b -q "MakeJetValidationPlots.C(\\\"run/plots\\\", \\\"{self.suffix}\\\", \\\"{merge_file}\\\")'
+        plot_comm   = f'root -b -q "MakeJetValidationPlots.C(\\\"run/plots\\\", \\\"{self.suffix}\\\", \\\"{merge_file}\\\")"'
         script_name = f"run/scripts/do_plots.{self.suffix}.sh"
 
         # generate script
