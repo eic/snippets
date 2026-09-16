@@ -409,7 +409,7 @@ TLorentzVector getPairParent(TVector3 pos1, TVector3 mom1, int charge1, double m
   TVector3 const p1MomAtDca = p1Helix.momentumAt(ss.first,  bField * tesla);
   TVector3 const p2MomAtDca = p2Helix.momentumAt(ss.second, bField * tesla);
   
-  TLorentzVector p1FourMom(p1MomAtDca, sqrt(p1MomAtDca.Mag2()+mass1*mass2));
+  TLorentzVector p1FourMom(p1MomAtDca, sqrt(p1MomAtDca.Mag2()+mass1*mass1));
   TLorentzVector p2FourMom(p2MomAtDca, sqrt(p2MomAtDca.Mag2()+mass2*mass2));
   
   TLorentzVector parent = p1FourMom + p2FourMom;
