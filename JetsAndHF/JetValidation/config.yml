@@ -1,0 +1,30 @@
+# ============================================================================= 
+# @file    config.yml
+# @authors Derek Anderson (derek.murphy.anderson@protonmail.com)
+# -----------------------------------------------------------------------------
+# @brief Snakemake config. Defines slurm execution parameters, eic-shell
+#   location, and no. of batches (nsplit) to process files in
+# =============================================================================
+
+executor: "slurm"
+jobs: 100
+default-resources:
+  slurm_account: "eic" # <<< CHANGE ME
+  slurm_partition: "ifarm" # <<< CHANGE ME
+  mem_mb: 4000
+  runtime: 60
+
+shell:
+  "/home/dereka/.bin/eic-shell" # <<< CHANGE ME
+
+did:
+  "epic:/RECO/26.07.1/epic_craterlake/DIS/pythia8.316-1.0/NC/noRad/ep/10x100/q2_100to1000"
+campaign:
+  "26071"
+dataset:
+  "py8ncdis10x100minq100t1000"
+
+nsplit:
+  100
+length:
+  2

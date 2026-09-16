@@ -24,6 +24,6 @@
 #SBATCH --error=<error log name>
 
 eic_shell=$HOME/.bin/eic-shell # NOTE edit me!
-version=26.05.0-stable # NOTE edit me!
+version=26.07.1-stable # NOTE edit me!
 
 $eic_shell -v $version -- $PWD/RunJetValidationInShell.sh
