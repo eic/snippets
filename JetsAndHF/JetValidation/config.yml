@@ -2,9 +2,17 @@
 # @file    config.yml
 # @authors Derek Anderson (derek.murphy.anderson@protonmail.com)
 # -----------------------------------------------------------------------------
-# @brief Top-level snakemake config. Defines
-#   slurm execution parameters, etc.
+# @brief Snakemake config. Defines slurm execution parameters, eic-shell
+#   location, and no. of batches (nsplit) to process files in
 # =============================================================================
+
+executor: "slurm"
+jobs: 100
+default-resources:
+  slurm_account: "eic" # <<< CHANGE ME
+  slurm_partition: "ifarm" # <<< CHANGE ME
+  mem_mb: 4000
+  runtime: 60
 
 shell:
   "/home/dereka/.bin/eic-shell" # <<< CHANGE ME
@@ -20,12 +28,3 @@ nsplit:
   100
 length:
   2
-
-# TODO uncomment when ready
-#executor: "slurm"
-#jobs: 100
-#default-resources:
-#  slurm_account: "eic"
-#  slurm_partition: "ifarm"
-#  mem_mb: 16000
-#  runtime: 60
