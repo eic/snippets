@@ -1,0 +1,15 @@
+# ============================================================================= 
+# @file    profile.yml
+# @authors Derek Anderson (derek.murphy.anderson@protonmail.com)
+# -----------------------------------------------------------------------------
+# @brief Snakemake profile for running with slurm. 
+# =============================================================================
+
+scheduler: "greedy"
+executor: "slurm"
+jobs: 100
+default-resources:
+  slurm_account: "<my-account>" # <<< CHANGE ME
+  slurm_partition: "<my-partition>" # <<< CHANGE ME
+  mem_mb: 4000
+  runtime: 60
