@@ -1,4 +1,6 @@
 # SVT reconstructed-hit rates by source
+Original implemented by Shujie Li, Oct 2026. 
+Refactored by Chatgpt. 
 
 Read EICrecon `events` trees, assign each SVT reconstructed hit to its MC source,
 and produce surface maps and rate tables. Copy this entire folder anywhere;
