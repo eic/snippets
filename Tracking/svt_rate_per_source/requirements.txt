@@ -1,0 +1,5 @@
+# Python >= 3.9. XRootD is needed only for remote root:// input.
+numpy>=1.24
+awkward>=2.7
+uproot>=5.5
+matplotlib>=3.7
