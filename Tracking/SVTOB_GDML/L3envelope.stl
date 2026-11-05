@@ -1,0 +1,86 @@
+solid cuboid
+  facet normal 0 0 -1
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex 1170.9 1419.9 -59.4
+      vertex 1170.9 -580.1 -59.4
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex -829.1 1419.9 -59.4
+      vertex 1170.9 1419.9 -59.4
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -829.1 -580.1 453.6
+      vertex 1170.9 -580.1 453.6
+      vertex 1170.9 1419.9 453.6
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -829.1 -580.1 453.6
+      vertex 1170.9 1419.9 453.6
+      vertex -829.1 1419.9 453.6
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex 1170.9 -580.1 -59.4
+      vertex 1170.9 -580.1 453.6
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex 1170.9 -580.1 453.6
+      vertex -829.1 -580.1 453.6
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -829.1 1419.9 -59.4
+      vertex -829.1 1419.9 453.6
+      vertex 1170.9 1419.9 453.6
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -829.1 1419.9 -59.4
+      vertex 1170.9 1419.9 453.6
+      vertex 1170.9 1419.9 -59.4
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex -829.1 -580.1 453.6
+      vertex -829.1 1419.9 453.6
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -829.1 -580.1 -59.4
+      vertex -829.1 1419.9 453.6
+      vertex -829.1 1419.9 -59.4
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1170.9 -580.1 -59.4
+      vertex 1170.9 1419.9 -59.4
+      vertex 1170.9 1419.9 453.6
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 1170.9 -580.1 -59.4
+      vertex 1170.9 1419.9 453.6
+      vertex 1170.9 -580.1 453.6
+    endloop
+  endfacet
+endsolid cuboid

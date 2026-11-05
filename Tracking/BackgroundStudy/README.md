@@ -1,6 +1,13 @@
 # Example scripts for tracking performance study with beam background
 * See https://indico.bnl.gov/event/29753/
 * contact: Shujie Li, shujieli@lbl.gov
+
+Other stand-alone tools:
+
+* [Recover generator HepMC3 from npsim EDM4hep output](README_extract_generator_hepmc.md)
+
+* [Hit-based track2particle analysis](track2particle/README.md)
+
 ### Note to general physics analysis:
 only use tracks with at least 4 hits, e.g.  __CentralCKFTrajectories.nMeaurements>3__ 
 

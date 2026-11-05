@@ -1,0 +1,86 @@
+solid cuboid
+  facet normal 0 0 -1
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex 540.5 927.8 -401.5
+      vertex 540.5 -72.2 -401.5
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex -459.5 927.8 -401.5
+      vertex 540.5 927.8 -401.5
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -459.5 -72.2 401.5
+      vertex 540.5 -72.2 401.5
+      vertex 540.5 927.8 401.5
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex -459.5 -72.2 401.5
+      vertex 540.5 927.8 401.5
+      vertex -459.5 927.8 401.5
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex 540.5 -72.2 -401.5
+      vertex 540.5 -72.2 401.5
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex 540.5 -72.2 401.5
+      vertex -459.5 -72.2 401.5
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -459.5 927.8 -401.5
+      vertex -459.5 927.8 401.5
+      vertex 540.5 927.8 401.5
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex -459.5 927.8 -401.5
+      vertex 540.5 927.8 401.5
+      vertex 540.5 927.8 -401.5
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex -459.5 -72.2 401.5
+      vertex -459.5 927.8 401.5
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -459.5 -72.2 -401.5
+      vertex -459.5 927.8 401.5
+      vertex -459.5 927.8 -401.5
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 540.5 -72.2 -401.5
+      vertex 540.5 927.8 -401.5
+      vertex 540.5 927.8 401.5
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 540.5 -72.2 -401.5
+      vertex 540.5 927.8 401.5
+      vertex 540.5 -72.2 401.5
+    endloop
+  endfacet
+endsolid cuboid

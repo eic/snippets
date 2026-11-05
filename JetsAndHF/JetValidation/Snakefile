@@ -1,0 +1,51 @@
+# =============================================================================
+# @file    Snakefile
+# @authors Derek Anderson (derek.murphy.anderson@protonmail.com)
+# -----------------------------------------------------------------------------
+# @brief Snakefile for executing snakemake workflow. General
+#   workflow is:
+#     1. Generate relevant shell scripts to run in eic-shell
+#     2. Generate nsplit filelists to process in parallel
+#     3. For each filelist, run MakeJetValidationHists.C
+#     4. hadd outputs from step 3 and run MakeJetValidationPlots.C
+#        on merged output
+# =============================================================================
+
+configfile: "config.yml"
+
+rule all:
+    input:
+        f"run/plots/matchedJetResolutionVsEta.epic{config['campaign']}_{config['dataset']}.png"
+
+rule jets_scripts:
+    output:
+        rucio=f"run/scripts/do_rucio.epic{config['campaign']}_{config['dataset']}.sh",
+        plots=f"run/scripts/do_plots.epic{config['campaign']}_{config['dataset']}.sh",
+        hists=[f"run/scripts/do_hists.split_{split:0{config['length']}}.epic{config['campaign']}_{config['dataset']}.sh" for split in range(config['nsplit'])],
+    shell:
+        "python MakeRunScripts.py -d {config[did]} -c {config[campaign]} -a {config[dataset]} -s {config[nsplit]} -l {config[length]}"
+
+rule jets_lists:
+    input:
+        script=f"run/scripts/do_rucio.epic{config['campaign']}_{config['dataset']}.sh",
+    output:
+        files=[f"run/lists/files.split_{split:0{config['length']}}.epic{config['campaign']}_{config['dataset']}.list" for split in range(config['nsplit'])],
+    shell:
+        "{config[shell]} -- {input.script}"
+
+rule jets_hists:
+    input:
+        splits=f"run/lists/files.split_{{split}}.epic{config['campaign']}_{config['dataset']}.list",
+    output:
+        hists=f"run/hists/hists.split_{{split}}.epic{config['campaign']}_{config['dataset']}.root",
+    shell:
+        "{config[shell]} -- run/scripts/do_hists.split_{wildcards.split}.epic{config[campaign]}_{config[dataset]}.sh"
+
+rule jets_plots:
+    input:
+        script=f"run/scripts/do_plots.epic{config['campaign']}_{config['dataset']}.sh",
+        hists=[f"run/hists/hists.split_{split:0{config['length']}}.epic{config['campaign']}_{config['dataset']}.root" for split in range(config['nsplit'])],
+    output:
+        plots=f"run/plots/matchedJetResolutionVsEta.epic{config['campaign']}_{config['dataset']}.png",
+    shell:
+        "{config[shell]} -- {input.script}"
