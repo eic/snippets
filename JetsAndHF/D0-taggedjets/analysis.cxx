@@ -1,5 +1,3 @@
-// D0-tagged Jets
-
 #ifdef __CINT__
 
 #pragma link off all globals;
@@ -82,7 +80,7 @@ double minJetPt            = 1.0 ;  			 // minimum jet pT
 double ghostMaxRap         = 3.5;   			 // maximum rapidity of ghosts
 double ghostArea           = 0.01; 				 // area per ghost
 int numGhostRepeat         = 1;                              // reuse count of ghosts
-int removeelectrons        = 1;
+int removeelectrons        = 2;
 int nhitcut                = 0;
 
 TVector3 getDcaToVtx(const int index, TVector3 vtx);
@@ -155,33 +153,28 @@ int main(int argc, char **argv)
 	
   TString listname;
   TString outname;
-  TString collname;
   float R_value;
-  TString signal, bkg, gen;
+  TString signal, bkg;
   TString signalmc; 
 
   if(argc==1)
     {
       listname  = "test.list";
       outname = "test.root";
-      collname = "ep";   
       R_value = 1.0;
       signal = "signal.root";
       bkg = "bkg.root";
-      gen = "gen.root";
       signalmc = "signalmc.root";
     }
 
-  if(argc>=8)
+  if(argc>=6)
     {
       listname = argv[1];
-      outname = argv[2];
-      collname = argv[3];      
-      R_value = std::atof(argv[4]);       
-      signal = argv[5]; 
-      bkg = argv[6];
-      gen = argv[7];
-      signalmc = "signalmc.root";
+      outname = argv[2];    
+      R_value = std::atof(argv[3]);       
+      signal = argv[4]; 
+      bkg = argv[5];
+      signalmc = argv[6];
     }
 
   TChain *chain = new TChain("events");
@@ -246,7 +239,7 @@ int main(int argc, char **argv)
 
   printf("[i] Read in %d files with %lld events in total\n", nfiles, chain->GetEntries());
 
-  TH1F *hEventStat = new TH1F("hEventStat", "Event statistics", 7, 0, 7);
+  TH1F *hEventStat = new TH1F("hEventStat", "Event statistics", 13, 0, 13);
   hEventStat->GetXaxis()->SetBinLabel(1, "MC events");
   hEventStat->GetXaxis()->SetBinLabel(2, "D0");
   hEventStat->GetXaxis()->SetBinLabel(3, "D0 -> pi+K");
@@ -254,6 +247,12 @@ int main(int argc, char **argv)
   hEventStat->GetXaxis()->SetBinLabel(5, "Reco Signal D0");
   hEventStat->GetXaxis()->SetBinLabel(6, "Reco Signal D0bar");
   hEventStat->GetXaxis()->SetBinLabel(7, "Reco Bkg D0");
+  hEventStat->GetXaxis()->SetBinLabel(8, "Gen Signal D0");
+  hEventStat->GetXaxis()->SetBinLabel(9, "Gen Signal D0bar");
+  hEventStat->GetXaxis()->SetBinLabel(10, "Gen Bkg D0");
+  hEventStat->GetXaxis()->SetBinLabel(11, "Reco charge particle");
+  hEventStat->GetXaxis()->SetBinLabel(12, "Gen charge particle");
+
 
   TH1F *hMcMult = new TH1F("hMcMult", "MC multiplicity (|#eta| < 3.5);N_{MC}", 50, 0, 50);
 
@@ -362,20 +361,8 @@ int main(int argc, char **argv)
   TH3F *h3sig_z = new TH3F("h3sig_z","Signal_D0;Z;y;M_D0(GeV/c^{2})",1000, -10, 10, 20, -5, 5, 100, 1.6, 2.0);    
   TH3F *h3bkg_z = new TH3F("h3bkg_z","Bkg_D0;Z;y;M_D0(GeV/c^{2})",1000, -10, 10, 20, -5, 5, 100, 1.6, 2.0);
   TH1F *hreco_eta = new TH1F("hreco_eta", "Eta distribution of reco particles ;eta", 500, -5,+5);
-
-  TH1F *hmc_eta   = new TH1F("hmc_eta",   "MC Particle #eta;#eta;Number of Particles", 500, -5, 5);
-  TH1F *hmc_eta_e = new TH1F("hmc_eta_e", "Electron #eta;#eta;Number of Particles",       500, -5, 5);
-  TH1F *hmc_eta_pi = new TH1F("hmc_eta_pi", "Pion #eta;#eta;Number of Particles",         500, -5, 5);
-  TH1F *hmc_eta_k  = new TH1F("hmc_eta_k",  "Kaon #eta;#eta;Number of Particles",         500, -5, 5);
-  TH1F *hmc_eta_p  = new TH1F("hmc_eta_p",  "Proton #eta;#eta;Number of Particles",       500, -5, 5);
-
-  TH1F *hreco_eta_e  = new TH1F("hreco_eta_e",  "Electron #eta;#eta;Number of Particles", 500, -5, 5);
-  TH1F *hreco_eta_pi = new TH1F("hreco_eta_pi", "Pion #eta;#eta;Number of Particles",     500, -5, 5);
-  TH1F *hreco_eta_k  = new TH1F("hreco_eta_k",  "Kaon #eta;#eta;Number of Particles",     500, -5, 5);
-  TH1F *hreco_eta_p  = new TH1F("hreco_eta_p",  "Proton #eta;#eta;Number of Particles",   500, -5, 5);
-  
-  
-  TTreeReader treereader(chain);
+   
+    TTreeReader treereader(chain);
   // MC Particles 
   TTreeReaderArray<int> mcPartGenStatus = {treereader, "MCParticles.generatorStatus"};
   TTreeReaderArray<int> mcPartPdg = {treereader, "MCParticles.PDG"};
@@ -477,7 +464,8 @@ int main(int argc, char **argv)
 
   // Define variables to store in the Ntuple
   float d0_pi_sig, d0_k_sig, d0xy_pi_sig, d0xy_k_sig, sum_d0xy_sig, dca_12_sig, dca_D0_sig, decay_length_sig, xB_sig, Q2_sig;
-  float costheta_sig, costhetaxy_sig, pt_D0_sig, y_D0_sig, mass_D0_sig, sigma_vtx_sig, mult_sig, signif_d0xy_pi_sig, signif_d0xy_k_sig, chi2_dca_sig,z_sig,dr_sig,angle_sig,etajet_sig,pTjet_sig, D0eta_sig, pt_parent_sig;
+  float costheta_sig, costhetaxy_sig, pt_D0_sig, y_D0_sig, mass_D0_sig, sigma_vtx_sig, mult_sig, signif_d0xy_pi_sig, signif_d0xy_k_sig, chi2_dca_sig,z_sig,dr_sig_eta,angle_sig,etajet_sig,pTjet_sig, D0eta_sig, pt_parent_sig,dr_sig_rapi;
+  std::vector<int> mcPdgId_jet_reco_sig;
   
     // Link the variables to the TTree branches
   tree_sig->Branch("d0_pi", &d0_pi_sig, "d0_pi/F");
@@ -501,12 +489,14 @@ int main(int argc, char **argv)
   tree_sig->Branch("xB", &xB_sig, "xB/F");
   tree_sig->Branch("Q2", &Q2_sig, "Q2/F");
   tree_sig->Branch("z", &z_sig, "z/F");
-  tree_sig->Branch("dr", &dr_sig, "dr/F");
+  tree_sig->Branch("dr_eta", &dr_sig_eta, "dr_eta/F");
+  tree_sig->Branch("dr_rapi", &dr_sig_rapi, "dr_rapi/F");
   tree_sig->Branch("angle", &angle_sig, "angle/F");
   tree_sig->Branch("etajet",&etajet_sig,"etajet/F");
   tree_sig->Branch("pTjet",&pTjet_sig,"pTjet/F");
   tree_sig->Branch("etaD0",&D0eta_sig,"etaD0/F");
   tree_sig->Branch("pt_parent",&pt_parent_sig,"pt_parent/F");
+  tree_sig->Branch("mcPdgId_jet_reco", &mcPdgId_jet_reco_sig);
 
   
   TFile *file_bkg = new TFile(bkg.Data(), "RECREATE");
@@ -514,7 +504,8 @@ int main(int argc, char **argv)
   
   // Define variables to store in the Ntuple
   float d0_pi_bkg, d0_k_bkg, d0xy_pi_bkg, d0xy_k_bkg, sum_d0xy_bkg, dca_12_bkg, dca_D0_bkg, decay_length_bkg, xB_bkg, Q2_bkg; 
-  float costheta_bkg, costhetaxy_bkg, pt_D0_bkg, y_D0_bkg, mass_D0_bkg, sigma_vtx_bkg, mult_bkg, signif_d0xy_pi_bkg, signif_d0xy_k_bkg, chi2_dca_bkg,z_bkg,dr_bkg,angle_bkg, etajet_bkg, pTjet_bkg, D0eta_bkg,pt_parent_bkg;
+  float costheta_bkg, costhetaxy_bkg, pt_D0_bkg, y_D0_bkg, mass_D0_bkg, sigma_vtx_bkg, mult_bkg, signif_d0xy_pi_bkg, signif_d0xy_k_bkg, chi2_dca_bkg,z_bkg,dr_bkg_eta,angle_bkg, etajet_bkg, pTjet_bkg, D0eta_bkg,pt_parent_bkg,dr_bkg_rapi;
+ std::vector<int> mcPdgId_jet_reco_bkg;
   
   // Link the variables to the TTree branches
   tree_bkg->Branch("d0_pi", &d0_pi_bkg, "d0_pi/F");
@@ -538,13 +529,14 @@ int main(int argc, char **argv)
   tree_bkg->Branch("xB", &xB_bkg, "xB/F"); 
   tree_bkg->Branch("Q2", &Q2_bkg, "Q2/F"); 
   tree_bkg->Branch("z", &z_bkg, "z/F");
-  tree_bkg->Branch("dr", &dr_bkg, "dr/F");
+  tree_bkg->Branch("dr_eta", &dr_bkg_eta, "dr_eta/F");
+  tree_bkg->Branch("dr_rapi", &dr_bkg_rapi, "dr_rapi/F");
   tree_bkg->Branch("angle", &angle_bkg, "angle/F");
   tree_bkg->Branch("etajet",&etajet_bkg,"etajet/F");
   tree_bkg->Branch("pTjet",&pTjet_bkg,"pTjet/F");
   tree_bkg->Branch("etaD0",&D0eta_bkg,"etaD0/F");
   tree_bkg->Branch("pt_parent",&pt_parent_bkg,"pt_parent/F");
-
+  tree_bkg->Branch("mcPdgId_jet_reco", &mcPdgId_jet_reco_bkg);
 
   // Generate the tree with true D0 Properties
   TFile *fout_mcgen = new TFile(signalmc.Data(),"RECREATE");
@@ -561,28 +553,6 @@ int main(int argc, char **argv)
   tree_D0->Branch("rapidity",&d0_y,"rapidity/F");
   tree_D0->Branch("mass",&d0_mass,"mass/F");
 
-  //ROOT file for Gen Jets 
-  TFile *file_gen = new TFile(gen.Data(), "RECREATE");
-  TTree *tree_gen_sig = new TTree("GenTree_sig","GenTree_sig");//Gen Jet Tree sig
-  TTree *tree_gen_bkg = new TTree("GenTree_bkg","GenTree_bkg");
-  float pt_gjet_sig,eta_gjet_sig,y_gjet_sig,genZ_sig, gdr_eta_sig, gdr_y_sig,gD0jetAngle_sig;
-  float pt_gjet_bkg,eta_gjet_bkg,y_gjet_bkg,genZ_bkg, gdr_eta_bkg, gdr_y_bkg,gD0jetAngle_bkg;
-    
-  tree_gen_sig->Branch("pt_gjet",&pt_gjet_sig,"pt_gjet/F");
-  tree_gen_sig->Branch("eta_gjet",&eta_gjet_sig,"eta_gjet/F");
-  tree_gen_sig->Branch("y_gjet",&y_gjet_sig,"y_gjet/F");
-  tree_gen_sig->Branch("Z", &genZ_sig,"Z/F");
-  tree_gen_sig->Branch("DeltaR_inEtaPhi", &gdr_eta_sig,"DeltaR_inEtaPhi/F");
-  tree_gen_sig->Branch("DeltaR_inYPhi", &gdr_y_sig,"DeltaR_inYPhi/F");
-  tree_gen_sig->Branch("Angle_bw_D0andJet", &gD0jetAngle_sig,"Angle_bw_D0andJet/F");
-  
-  tree_gen_bkg->Branch("pt_gjet",&pt_gjet_bkg,"pt_gjet/F");
-  tree_gen_bkg->Branch("eta_gjet",&eta_gjet_bkg,"eta_gjet/F");
-  tree_gen_bkg->Branch("y_gjet",&y_gjet_bkg,"y_gjet/F");
-  tree_gen_bkg->Branch("Z", &genZ_bkg,"Z/F");
-  tree_gen_bkg->Branch("DeltaR_inEtaPhi", &gdr_eta_bkg,"DeltaR_inEtaPhi/F");
-  tree_gen_bkg->Branch("DeltaR_inYPhi", &gdr_y_bkg,"DeltaR_inYPhi/F");
-  tree_gen_bkg->Branch("Angle_bw_D0andJet", &gD0jetAngle_bkg,"Angle_bw_D0andJet/F");
   
 //Variables for Jet Clustering	
 	  int NEVENTS = 0;
@@ -695,14 +665,7 @@ int main(int argc, char **argv)
       
       for(unsigned int rc_index=0; rc_index<rcMomPx.GetSize(); rc_index++)
 	{
-	  // reco level eta using Real PID
-	  TVector3 mom(rcMomPx[rc_index], rcMomPy[rc_index], rcMomPz[rc_index]);
-	  hreco_eta->Fill(mom.Eta());
-
-	  if(abs(rcPdg[rc_index]) == 11) hreco_eta_e->Fill(mom.Eta());
-	  if(abs(rcPdg[rc_index]) == 211) hreco_eta_pi->Fill(mom.Eta());
-	  if(abs(rcPdg[rc_index]) == 321 ) hreco_eta_k->Fill(mom.Eta());
-	  if(abs(rcPdg[rc_index]) == 2212) hreco_eta_p->Fill(mom.Eta());
+	  hEventStat->Fill(10.5); //reco charge particle
 	  
 	  // loop over the association to find the matched MC particle
 	  // with largest weight
@@ -722,19 +685,15 @@ int main(int argc, char **argv)
 	  assoc_map_to_rc[matched_mc_index] = rc_index;
 	  assoc_map_to_mc[rc_index] = matched_mc_index;
 	}
-
+      
       // Loop over primary particles
       int nMcPart = 0;
       for(int imc=0; imc<nMCPart; imc++)
 	{
-	  // mc level eta using Truth PID
-	  TVector3 mom(mcMomPx[imc], mcMomPy[imc], mcMomPz[imc]);
-          hmc_eta->Fill(mom.Eta());
 
-          if(abs(mcPartPdg[imc]) == 11) hmc_eta_e->Fill(mom.Eta());
-          if(abs(mcPartPdg[imc]) == 211) hmc_eta_pi->Fill(mom.Eta());
-          if(abs(mcPartPdg[imc]) == 321 ) hmc_eta_k->Fill(mom.Eta());
-          if(abs(mcPartPdg[imc]) == 2212) hmc_eta_p->Fill(mom.Eta());
+	  if(mcPartCharge[imc] !=0 ){
+	    hEventStat->Fill(11.5);// mc charge particles
+	  }
 
 	  
 	  if(mcPartGenStatus[imc] == 1 && mcPartCharge[imc] != 0)
@@ -967,31 +926,54 @@ int main(int argc, char **argv)
       // pair pion and kaon
       for(unsigned int i=0; i<pi_index.size(); i++)
 	{
-
-	  //Check for pion using Truth level info
-	  /*int mcIdx_pii = -1;
-	  if(assoc_map_to_mc.find(pi_index[i]) != assoc_map_to_mc.end()) mcIdx_pii = assoc_map_to_mc[pi_index[i]];
-	  
-	  if(mcIdx_pii >=0 ){ 
-	    if(abs(mcPartPdg[mcIdx_pii]) != 211 ) continue ;
+	  /* // check for electron contamination in Pi(using Truth PDG)
+	  int rc_idx1 = pi_index[i]; 
+	  int mc_idx1 = -1;
+	  float mc_idx_weight1 = -1.0;
+	  for(unsigned int itrkass = 0; itrkass < assocWeight.GetSize(); itrkass++){ // Loop Over All ReconstructedChargedParticleAssociations
+	    
+	    if( assocWeight.GetSize() > 0 ){
+	      if(TrkPartAssocRec[itrkass] == rc_idx1){ // Select Entry Matching the ReconstructedChargedParticle Index
+		if(assocWeight[itrkass] > mc_idx_weight1){ // Find Particle with Greatest Weight = Contributed Most Hits to Track
+		  mc_idx1 = TrkPartAssocSim[itrkass]; // Get Index of MCParticle Associated with ReconstructedChargedParticle
+		  mc_idx_weight1 = assocWeight[itrkass];
+		}
+	      }
+	    }
 	  }
-	  */
-	  bool not_pi = false;
+
+	  if(mc_idx1 >= 0){
+	    if(mcPartPdg[mc_idx1] == 11) continue;
+	    //if(abs(mcPartPdg[mc_idx1]) == 2212) continue;
+	    }*/
+	  	 
 	  TVector3 dcaToVtx = getDcaToVtx(pi_index[i], vertex_rc);
 	  std::array<float, 21>& cov_pion = rcTrkCov->At(pi_index[i]);
 	  int q_pion = rcCharge[pi_index[i]];
 	   
 	  for(unsigned int j=0; j<k_index.size(); j++)
 	    {
-	      bool not_k = false;
-	      //Check for kaon using Truth level info
-	      /*int mcIdx_kk = -1;
-	      if(assoc_map_to_mc.find(k_index[i]) != assoc_map_to_mc.end()) mcIdx_kk = assoc_map_to_mc[k_index[i]];
-
-	      if(mcIdx_kk>=0){
-		if(abs(mcPartPdg[mcIdx_kk]) != 321) continue ;
+	      /* check for electron contamination in Kaons (using Truth PID)	
+	      int rc_idx2 = k_index[j]; 
+	      int mc_idx2 = -1;
+	      float mc_idx_weight2 = -1.0;
+	      for(unsigned int itrkass = 0; itrkass < assocWeight.GetSize(); itrkass++){ // Loop Over All ReconstructedChargedParticleAssociations
+		
+		if( assocWeight.GetSize() > 0 ){
+		  if(TrkPartAssocRec[itrkass] == rc_idx2){ // Select Entry Matching the ReconstructedChargedParticle Index
+		    if(assocWeight[itrkass] > mc_idx_weight2){ // Find Particle with Greatest Weight = Contributed Most Hits to Track
+		      mc_idx2 = TrkPartAssocSim[itrkass]; // Get Index of MCParticle Associated with ReconstructedChargedParticle
+		      mc_idx_weight2 = assocWeight[itrkass];
+		    }
+		  }
+		}
 	      }
-	      */
+	      
+	      if(mc_idx2 >= 0){
+		if(mcPartPdg[mc_idx2] == 11) continue;
+		//if(abs(mcPartPdg[mc_idx2]) == 2212) continue;
+		}*/
+	      
 	      TVector3 dcaToVtx2 = getDcaToVtx(k_index[j], vertex_rc);
 	      std::array<float, 21>& cov_kaon = rcTrkCov->At(k_index[j]); 
 	      int q_kaon = rcCharge[k_index[j]];
@@ -1010,6 +992,7 @@ int main(int argc, char **argv)
 		      if(mc_index_pi==mc_index_D0_pi[k] && mc_index_k==mc_index_D0_k[k])
 			{
 			  is_D0_pik = true;
+			  
 			  break;
 			}
       		    }
@@ -1029,6 +1012,7 @@ int main(int argc, char **argv)
 	          //Signal D0
 		  if(is_D0_pik) 
 		    {
+		      
 		   TVector3 MCVertex_Kaon(mcPartVx[mc_index_k], mcPartVy[mc_index_k], mcPartVz[mc_index_k]);
 		   TVector3 MCVertex_Pion(mcPartVx[mc_index_pi], mcPartVy[mc_index_pi], mcPartVz[mc_index_pi]);
 		   
@@ -1086,27 +1070,18 @@ int main(int argc, char **argv)
 		      Q2_sig = Q2_mc;        
 		        
 //Jet Clustering for the signal D0 (signal pik pair)   
+
 // Build pseudojets (using reco-particles)
 
-		      std::vector<fastjet::PseudoJet> particles_reco; // Reco PseudoJet type Vector
+		      std::vector<fastjet::PseudoJet> particles_reco; // to store reco PseudoJets
 		      int c1 =0;                                                           
 		      
-		      for (unsigned int i = 0; i < rcMomPx.GetSize(); ++i) { 
-			
-			bool is_PiorK = false;
-			if(i == pii_index || i == kk_index){  //looking for pi and k daughters of signal D0  
-			  is_PiorK = true;
-			}
- 
-			if(is_PiorK) continue;
- 
-			TVector3 mom(rcMomPx[i], rcMomPy[i],rcMomPz[i]);
-			if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-			if ( TrkRecoNhits[i] < nhitcut ) continue;
-			
-			if ( removeelectrons == 1 ){
-			  // Find electron
-			  int chargePartIndex = i; 
+		      for (unsigned int k = 0; k < rcMomPx.GetSize(); ++k) { 
+			//-----------------------------------------------------------------------------------------------------------	
+
+			if ( removeelectrons == 1 ){ // skipping electrons using Truth PID matching
+
+			  int chargePartIndex = k; 
 			  int elecIndex = -1;
 			  float elecIndexWeight = -1.0;
 			  for(unsigned int itrkass = 0; itrkass < assocWeight.GetSize(); itrkass++){ // Loop Over All ReconstructedChargedParticleAssociations
@@ -1122,26 +1097,31 @@ int main(int argc, char **argv)
 			  }
 
 			  if(mcPartPdg[elecIndex] == 11) continue;
-			}
+		 	}
 			
-			if ( removeelectrons == 2 && i == ScatteredERecId ) continue; 
+			if ( removeelectrons == 2 && k == ScatteredERecId ) continue; // skipping scattered electrons using Reco Info
+			//------------------------------------------------------------------------------------------------------------------------
 
-			fastjet::PseudoJet p(rcMomPx[i], rcMomPy[i], rcMomPz[i], TrkRecoE[i]);
-			p.set_user_index(i);
+			if(k == pii_index || k == kk_index) continue;    //skipping pi and k daughters of the signal D0 
+ 
+			TVector3 mom(rcMomPx[k], rcMomPy[k],rcMomPz[k]);
+			if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
+			if ( TrkRecoNhits[k] < nhitcut ) continue;
+		
+			fastjet::PseudoJet p(rcMomPx[k], rcMomPy[k], rcMomPz[k], TrkRecoE[k]);
+			p.set_user_index(k);
 			particles_reco.push_back(p);
 		      }
 
-		      //----------Introducing D0 parent into recotype PseudoJets---------------------	
+		      // Getting Sig D0 four-vector	
 		      float dcaDaughters, cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx;
 		      TVector3 decayVertex, decayVertex_ana; 
 		      double chi2_ndf;
 		      double err_Par[5];  // or whatever size is appropriate
 		      //double* err_Par = errParArray;
 		      TLorentzVector parent = getPairParent(pii_index,kk_index, vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx,decayVertex,decayVertex_ana,chi2_ndf, err_Par);
-		      pt_parent_sig = parent.Pt();
-  
-		      if ( parent.Pt() < minCstPt || parent.Pt() > maxCstPt ){ // if D0 parent don't fit in Jet Constituent Pt limits => introduce pi-k daughters  to pseudojets                                                //we should not do this, it would give jets with no D0!!!
-    
+		       
+		      if ( parent.Pt() < minCstPt || parent.Pt() > maxCstPt ){ // if D0 parent don't fit in Jet Constituent Pt limits => introduce pi-k daughters to pseudojets                                                
 			for (int l=0;l<2;l++){ 
 			  int idx;
 			  if (l==0) idx = pii_index;
@@ -1150,7 +1130,7 @@ int main(int argc, char **argv)
 			
 			  TVector3 mom(rcMomPx[idx], rcMomPy[idx],rcMomPz[idx]);
 			  if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-			  if ( TrkRecoNhits[i] < nhitcut ) continue;
+			  if ( TrkRecoNhits[idx] < nhitcut ) continue;
 			  
 			  fastjet::PseudoJet p(rcMomPx[idx], rcMomPy[idx], rcMomPz[idx], TrkRecoE[idx]);
 			  p.set_user_index(idx);
@@ -1159,6 +1139,7 @@ int main(int argc, char **argv)
 			} 
 		      }
 		      
+		    // if D0 pt is in require limits  
 		      if ( parent.Pt() > minCstPt && parent.Pt() < maxCstPt ){
 			fastjet::PseudoJet p(parent.Px(), parent.Py(),parent.Pz(), parent.E());  
 			p.set_user_index(-99999);                                 // setting D0 particle index = negative integer (-99999) 
@@ -1208,7 +1189,6 @@ int main(int argc, char **argv)
 	    RecoJet_M.push_back(jet.m());
 	    RecoJet_rapi.push_back(jet.rap());
 		
-
 	    bool hasElectron = false;
 	    float maxPtReco = -1.0;
 	    std::vector<float> cpt, ceta, cphi, cenergy,crapi;
@@ -1220,11 +1200,11 @@ int main(int argc, char **argv)
 	    for (auto &c : jet.constituents()) {
 	      int idx = c.user_index();
 	      
-        //Look for the Signal D0 constituent of the Jet 
+	      //Look for the Signal D0 constituent of the Jet 
 	      bool is_D0_parent = false;
 	      
 	      if(idx == -99999){ //check for the signal D0
-	      
+		
 		for(const auto& p : particles_reco ){ // loop over all the jet particles
 		
 		  if (p.user_index() == idx) {
@@ -1243,10 +1223,11 @@ int main(int argc, char **argv)
 		cpdgidtruth.push_back(421);
 		cindex.push_back(idx);
 		crapi.push_back(D0_parent.rap());
-		                                                          // Here, hasElectron = false
+		// Here, hasElectron = false
+		
 		if (D0_parent.pt() > maxPtReco) maxPtReco = D0_parent.pt();   
 	      }
-	      if (is_D0_parent) continue; // skip the rest of loop for signal D0 particle jet
+	      if (is_D0_parent) continue; // skip the rest of loop for signal D0 particle
 		    
 	      TVector3 v3(rcMomPx[idx], rcMomPy[idx], rcMomPz[idx]);
 	      float rcEnergy = TrkRecoE[idx];
@@ -1301,24 +1282,24 @@ int main(int argc, char **argv)
 
 // Reading Reco Jet(Signal):
 
-	for(unsigned int i=0; i<RecoJet_pt.size(); i++){  //loop over reco jets  
+	bool c2= false;
+       	for(unsigned int k=0; k<RecoJet_pt.size(); k++){  //loop over reco jets  
 	  
-	  int  jetParticles = RecoJet_constituent_idx[i].size();  // Total no. of constituents of ith jet 
+	  int  jetParticles = RecoJet_constituent_idx[k].size();  // Total no. of constituents of kth jet 
      
-	  float jetPt  = RecoJet_pt[i];
-	  float jetEta = RecoJet_eta[i];
-	  float jetRapidity = RecoJet_rapi[i];
-	  float jetPhi = RecoJet_phi[i];
-	  float jetE = RecoJet_E[i];
-     
-	  TLorentzVector LvJet;
-	  LvJet.SetPtEtaPhiE(jetPt,jetEta, jetPhi, jetE); // TLorentzVector of Jet 
-	  TVector3 jetMom = LvJet.Vect(); // Jet Momentum Vector
-       	  bool c2= false;
-     
-	  for(unsigned int j=0; j<RecoJet_constituent_idx[i].size(); j++){ //Loop over all constituent particles of the ith Jet
+	  float jetPt  = RecoJet_pt[k];
+	  float jetEta = RecoJet_eta[k];
+	  float jetRapidity = RecoJet_rapi[k];
+	  float jetPhi = RecoJet_phi[k];
+	  float jetE = RecoJet_E[k];
 
-	    int particle_idx = RecoJet_constituent_idx[i][j]; // index of jth particle of ith jet
+	  TLorentzVector lvJet;
+	  lvJet.SetPtEtaPhiE(jetPt,jetEta, jetPhi, jetE); // Jet TLorentzVector	  
+	  TVector3 jetMom = lvJet.Vect(); // Jet Momentum Vector
+     
+	  for(unsigned int l=0; l<RecoJet_constituent_idx[k].size(); l++){ //Loop over all constituent particles of the kth Jet
+
+	    int particle_idx = RecoJet_constituent_idx[k][l]; // index of lth particle of kth jet
 	    bool is_D0 = false;
             
 	    //check if constituent particle is D0
@@ -1329,17 +1310,16 @@ int main(int argc, char **argv)
 	 
 	    if(is_D0){  // if Jet constituent is the signal D0
 
-	      float D0Pt  = RecoJet_constituent_pt[i][j];
-	      float D0Eta = RecoJet_constituent_eta[i][j];
-	      float D0Phi = RecoJet_constituent_phi[i][j];
-	      float D0E = RecoJet_constituent_energy[i][j];
+	      float D0Pt  = RecoJet_constituent_pt[k][l];
+	      float D0Eta = RecoJet_constituent_eta[k][l];
+	      float D0Phi = RecoJet_constituent_phi[k][l];
+	      float D0E = RecoJet_constituent_energy[k][l];
 		  
 	      TLorentzVector lvD0; 
 	      lvD0.SetPtEtaPhiE(D0Pt, D0Eta, D0Phi, D0E);
+	      TVector3 D0_Mom = lvD0.Vect();
+	      float D0Mass = lvD0.M();
 	      
-	      TVector3 D0_Mom;
-	      D0_Mom.SetPtEtaPhi(D0Pt, D0Eta, D0Phi);
-              float D0Mass = lvD0.M();
 	      float D0Rapidity = lvD0.Rapidity();
 	
 	      float sig_z = float(jetMom.Dot(D0_Mom))/float(jetMom.Dot(jetMom)) ;  // Fragmentation Variable z for the sinal D0
@@ -1350,31 +1330,37 @@ int main(int argc, char **argv)
 	      float dPhi = jetPhi - D0Phi;
               dPhi = TVector2::Phi_mpi_pi(dPhi);
               float dEta = jetEta - D0Eta;
-              float deltaR = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // sig_D0 distance from JetAxis in eta-Phi space
-              
+	      float drapi = jetRapidity - D0Rapidity;
+	      
+              float deltaR_eta = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // sig_D0 distance from JetAxis in eta-Phi space
+	      float deltaR_rapi = TMath::Sqrt(drapi*drapi + dPhi*dPhi); 
+	      
               float angleRad = jetMom.Angle(D0_Mom); // angle bw sig_D0 momentum vector and jetMomentum vector
               float angleDeg = angleRad * 180.0 / TMath::Pi(); 
 	                    
               angle_sig	= angleDeg;
-              dr_sig = deltaR;
+              dr_sig_eta = deltaR_eta;
+	      dr_sig_rapi = deltaR_rapi;
               etajet_sig = jetEta;
 	      pTjet_sig = jetPt;
 	      D0eta_sig = D0Eta;
+	      mcPdgId_jet_reco_sig = RecoJet_constituent_pdgidTruth[k]; // storing mc pdg ids of kth jet constituents
+
 	      
-	      break;//leaving the JetConstituent loop because we found the only signal D0 present
+	      break;// leave the jet constituent loop once we find the only bkg D0 present
 	   } 	 
 	}
-	  if(c2) break; // leaving the Jet loop because we found the only signal D0 present
+	  if(c2) break; //leave the jet loop once we find the only bkg D0 present
       }
                   
-      tree_sig->Fill();
+	if(c2) tree_sig->Fill(); 
        
 		    }
-
-		  //Background:   
+		  
+		  //Background Reco:   
 		  else
 		    {
-
+		      
 		      hEventStat->Fill(6.5);   
 		      hchi2_vtx_bkg->Fill(chi2_ndf);		            
 		      h3PairDca12[1]->Fill(parent.Pt(), parent.Rapidity(), dcaDaughters);
@@ -1408,21 +1394,16 @@ int main(int argc, char **argv)
     		      Q2_bkg = Q2_mc; 
 		      
 //Jet Clustering for the Bkg D0 (Bkg pi-k pair)      
-//Build pseudojets (recotype)
 
+//Build pseudojets (recotype)
 
 	std::vector<fastjet::PseudoJet> particles_reco;                                                      
         
-        for (unsigned int i = 0; i < rcMomPx.GetSize(); ++i) { 
+        for (unsigned int k = 0; k < rcMomPx.GetSize(); ++k) { 
                                                                              
-	  
-	TVector3 mom(rcMomPx[i], rcMomPy[i],rcMomPz[i]);
-	if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-	if ( TrkRecoNhits[i] < nhitcut ) continue;
-	
-	if ( removeelectrons == 1 ){ // ******
-	  // Find electron
-	  int chargePartIndex = i; 
+	  //--------------------------------------------------------------------------------------------------------------------
+	  if ( removeelectrons == 1 ){ // Skipping electrons using Truth PID matching
+	  int chargePartIndex = k; 
 	  int elecIndex = -1;
 	  float elecIndexWeight = -1.0;
 	  for(unsigned int itrkass = 0; itrkass < assocWeight.GetSize(); itrkass++){ // Loop Over All ReconstructedChargedParticleAssociations
@@ -1436,28 +1417,29 @@ int main(int argc, char **argv)
 	      }
 	    }
 	  }
+	  
 	  if(mcPartPdg[elecIndex] == 11){
-
-	    if( i == pii_index || i == kk_index ){
-	      if(i == pii_index) not_pi = true;
-	      if(i == kk_index) not_k = true;
-	      break;
-	    }
 	    continue;
 	  }
-	}
+	  
+	  }
 	
-	if ( removeelectrons == 2 && i == ScatteredERecId ) continue; // *****
-
-	fastjet::PseudoJet p(rcMomPx[i], rcMomPy[i], rcMomPz[i], TrkRecoE[i]);
-	p.set_user_index(i);
+	 if ( removeelectrons == 2 && k == ScatteredERecId ) continue; // Skipping scattered electrons using Reco Info
+	   
+	//--------------------------------------------------------------------------------------------------------
+	
+	if(k == pii_index || k == kk_index) continue; //skipping pi-k daughters from pseudo jet making
+			  
+	TVector3 mom(rcMomPx[k], rcMomPy[k],rcMomPz[k]); 
+	if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;// pt Check 
+	if ( TrkRecoNhits[k] < nhitcut ) continue; // hit check
+	
+	fastjet::PseudoJet p(rcMomPx[k], rcMomPy[k], rcMomPz[k], TrkRecoE[k]);
+	p.set_user_index(k);
 	particles_reco.push_back(p);
         }
-
-	if(not_k) continue;  // skip to next rc k
-	if(not_pi) goto next_pi; // get out of k loop and move to next pi
 	   
-	//Introducing Signal D0 parent into recotype PseudoJets	
+	// Getting BKG D0 parent Four-Vector
 	float dcaDaughters, cosTheta, decayLength, V0DcaToVtx, cosTheta_xy, sigma_vtx;
 	TVector3 decayVertex, decayVertex_ana; 
 	double chi2_ndf;
@@ -1466,32 +1448,28 @@ int main(int argc, char **argv)
         TLorentzVector parent = getPairParent(pii_index,kk_index, vertex_rc, dcaDaughters, cosTheta, cosTheta_xy, decayLength, V0DcaToVtx, sigma_vtx,decayVertex,decayVertex_ana,chi2_ndf, err_Par);
 	pt_parent_bkg = parent.Pt();
 
-//if bkg D0 Pt < minCstPt or > maxCstPt, then instead of D0 parent, introducing its pi-k daughters to recotype pseudoJet	
-	if ( parent.Pt() < minCstPt || parent.Pt() > maxCstPt ){ //we should not do this as this will may give jet with no D0
-        
+        //if bkg D0 Pt < minCstPt or > maxCstPt, then instead of D0 parent, introducing its pi-k daughters to recotype pseudoJet	
+	if ( parent.Pt() < minCstPt || parent.Pt() > maxCstPt ){ 
+	
 	  for (int l=0;l<2;l++){ 
 	    int idx;
-            
-            if (l==0){
-              idx = pii_index;
-            }
-	  
-	  if(l==1){
-	    idx = kk_index;
+	    if (l==0) idx = pii_index;
+	    if(l==1)  idx = kk_index;
+	    
+	    
+	    TVector3 mom(rcMomPx[idx], rcMomPy[idx],rcMomPz[idx]);
+	    if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
+	    if ( TrkRecoNhits[idx] < nhitcut ) continue;
+	    
+	    fastjet::PseudoJet p(rcMomPx[idx], rcMomPy[idx], rcMomPz[idx], TrkRecoE[idx]);
+	    p.set_user_index(idx);
+	    particles_reco.push_back(p);
+			  
 	  }
-	  
-        TVector3 mom(rcMomPx[idx], rcMomPy[idx],rcMomPz[idx]);
-        if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-        if ( TrkRecoNhits[i] < nhitcut ) continue;
-
-        fastjet::PseudoJet p(rcMomPx[idx], rcMomPy[idx], rcMomPz[idx], TrkRecoE[idx]);
-        p.set_user_index(idx);
-        particles_reco.push_back(p);
-	
 	} 
-	}
+	
 
-//If bkg D0 Pt is b/w minCstPt and maxCstPt
+      // If bkg D0 Pt is b/w minCstPt and maxCstPt
 	if ( parent.Pt() > minCstPt && parent.Pt() < maxCstPt ){ 
 	    fastjet::PseudoJet p(parent.Px(), parent.Py(),parent.Pz(), parent.E());  
 	    p.set_user_index(-99999);// setting signal D0 index = negative integer (-99999) 
@@ -1573,7 +1551,8 @@ int main(int argc, char **argv)
 		cpdgidtruth.push_back(421);
 		cindex.push_back(idx);
 		crapi.push_back(D0_parent.rap());
-		                                                          // Here, hasElectron = false
+		// Here, hasElectron = false
+		
 		if (D0_parent.pt() > maxPtReco) maxPtReco = D0_parent.pt();   
 	      }
 	      if (is_D0_parent) continue;// skip the rest of the loop for bkg D0
@@ -1631,24 +1610,25 @@ int main(int argc, char **argv)
  
 
 //Reading Reco Jet(BKG):
-	for(unsigned int i=0; i<RecoJet_pt.size(); i++){  //loop over reco Jets  
+
+	bool c2= false;
+     	for(unsigned int k=0; k<RecoJet_pt.size(); k++){  //loop over reco Jets  
 	  
-	  int  jetParticles = RecoJet_constituent_idx[i].size();  // Total no. of particles of the ith Jet
+	  int  jetParticles = RecoJet_constituent_idx[k].size();  // Total no. of particles of the kth Jet
      
-	  float jetPt  = RecoJet_pt[i];
-	  float jetEta = RecoJet_eta[i];
-	  float jetRapidity = RecoJet_rapi[i];
-	  float jetPhi = RecoJet_phi[i];
-	  float jetE = RecoJet_E[i];
+	  float jetPt  = RecoJet_pt[k];
+	  float jetEta = RecoJet_eta[k];
+	  float jetRapidity = RecoJet_rapi[k];
+	  float jetPhi = RecoJet_phi[k];
+	  float jetE = RecoJet_E[k];
      
 	  TLorentzVector LvJet;
 	  LvJet.SetPtEtaPhiE(jetPt,jetEta, jetPhi, jetE); // Jet TLorentzVector
 	  TVector3 jetMom = LvJet.Vect(); // Jet Momentum Vector
-       	  bool c2= false;
      
-	  for(unsigned int j=0; j<RecoJet_constituent_idx[i].size(); j++){   //Loop over all particles of the ith Jet
+	  for(unsigned int l=0; l<RecoJet_constituent_idx[k].size(); l++){   //Loop over all particles of the kth Jet
 
-	    int particle_idx = RecoJet_constituent_idx[i][j]; // index of jth particle of ith jet
+	    int particle_idx = RecoJet_constituent_idx[k][l]; // index of lth particle of kth jet
 	    bool is_D0 = false;
             
 	    //check if particle is the bkg D0 
@@ -1659,17 +1639,17 @@ int main(int argc, char **argv)
 	 
 	    if(is_D0){  // if Jet constituent is the bkg D0
 
-	      float D0Pt  = RecoJet_constituent_pt[i][j];
-	      float D0Eta = RecoJet_constituent_eta[i][j];
-	      float D0Phi = RecoJet_constituent_phi[i][j];
-	      float D0E = RecoJet_constituent_energy[i][j];
+	      float D0Pt  = RecoJet_constituent_pt[k][l];
+	      float D0Eta = RecoJet_constituent_eta[k][l];
+	      float D0Phi = RecoJet_constituent_phi[k][l];
+	      float D0E = RecoJet_constituent_energy[k][l];
 		  
 	      TLorentzVector lvD0;
 	      lvD0.SetPtEtaPhiE(D0Pt, D0Eta, D0Phi, D0E);
 	      
-	      TVector3 D0_Mom;
-	      D0_Mom.SetPtEtaPhi(D0Pt, D0Eta, D0Phi);
-              float D0Mass = lvD0.M();
+	      TVector3 D0_Mom= lvD0.Vect();
+	      float D0Mass = lvD0.M();
+	     
 	      float D0Rapidity = lvD0.Rapidity();
 	
 	      float bkg_z = float(jetMom.Dot(D0_Mom))/float(jetMom.Dot(jetMom)) ;  // Fragmentation Variable z for bkg D0
@@ -1680,24 +1660,29 @@ int main(int argc, char **argv)
               float dPhi = jetPhi - D0Phi;
               dPhi = TVector2::Phi_mpi_pi(dPhi);
               float dEta = jetEta - D0Eta;
-              float deltaR = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // bkg_D0 distance from JetAxis in eta-Phi space
-              
+	      float drapi = jetRapidity - D0Rapidity;
+
+	      float deltaR_eta = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // bkg_D0 distance from JetAxis in eta-Phi space
+              float deltaR_rapi = TMath::Sqrt(drapi*drapi + dPhi*dPhi);
+	      
               float angleRad = jetMom.Angle(D0_Mom); // angle bw bkg_D0 Momentum vector and jetMomentum vector
               float angleDeg = angleRad * 180.0 / TMath::Pi();
         
               angle_bkg = angleDeg;
-              dr_bkg = deltaR;
+              dr_bkg_eta = deltaR_eta;
+	      dr_bkg_rapi = deltaR_rapi;
               pTjet_bkg = jetPt;
               etajet_bkg= jetEta;
 	      D0eta_bkg = D0Eta;
-
+	      mcPdgId_jet_reco_bkg = RecoJet_constituent_pdgidTruth[k]; // storing mc pdg ids kth jet's constituents
+	      	      
 	      break; // leave the jet constituent loop once we find the only bkg D0 present
 	    } 	 
 	  }
-	  if(c2) break; // leave the jet constituent loop once we find the only bkg D0 present 
+	  if(c2) break; // leave the jet loop once we find the only bkg D0 present 
 	}
 	
-       tree_bkg->Fill();
+	if(c2) tree_bkg->Fill(); 
 		    }
 
 		  if(dcaToVtx.Perp() >= 0.02 && dcaToVtx2.Perp() >= 0.02 &&
@@ -1714,554 +1699,10 @@ int main(int argc, char **argv)
 		    }
 		}// if(unlike charge rc pi and k) 
 	    }//for(rc k)
-	next_pi:
-	  continue;
 	}//for(rc pi)
 
-      //--------------------------------------------------GenJetClustering--------------------------------------------------------------------------
-
-
-      vector<unsigned int> mc_pi_index;
-      vector<unsigned int> mc_k_index;
-      mc_pi_index.clear();
-      mc_k_index.clear();
-      
-      // get all MC pi and K
-      for(unsigned int mc_index=0; mc_index<mcPartMass.GetSize(); mc_index++)
-	{	  
-	  if(abs(mcPartPdg[mc_index]) == 211) mc_pi_index.push_back(mc_index);
-	  if(abs(mcPartPdg[mc_index]) == 321) mc_k_index.push_back(mc_index);
-	  
-	}
-		  
-      // pair pion and kaon
-      for(unsigned int i=0; i<mc_pi_index.size(); i++)//loop over all mc pi
-	{
-	  for(unsigned int j=0; j<mc_k_index.size(); j++)// loop over all mc k
-	    {
-	      if(mcPartCharge[mc_pi_index[i]]*mcPartCharge[mc_k_index[j]]<0)// only unlike charged mc pi and mc k
-		{
-		  bool is_D0_pik = false;
-		  for(unsigned int k=0; k<mc_index_D0_pi.size(); k++)
-		    {
-		      if(mc_pi_index[i]==mc_index_D0_pi[k] && mc_k_index[j]==mc_index_D0_k[k])// checking for if mc pi-k pair coming from a D0 decay
-			{
-			  is_D0_pik = true;
-			  break;
-			}
-      		    }
-
-		  // Storing mc index of pi and k of the pair
-		  int pii_index = mc_pi_index[i]; // mc index of pion
-		  int kk_index =  mc_k_index[j];  // mc index of kaon
-
-	          //Signal mc pi-k pair
-		  if(is_D0_pik) 
-		    {  
-		      
-		      // PseudoJet Building
-		      std::vector<fastjet::PseudoJet> particles_gen;       
-		      for (unsigned int i = 0; i < mcPartMass.GetSize(); ++i) {
-			
-			TVector3 mom(mcMomPx[i], mcMomPy[i], mcMomPz[i]);
-			if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-			if ( mcPartCharge[i] == 0 ) continue;
-			if ( removeelectrons == 1 && mcPartPdg[i] == 11 ) continue;
-			if ( removeelectrons == 2 && i == ScatteredEGenId ) continue;
-		    
-			if(i == pii_index || i == kk_index) continue; //skipping the pi-k pair in pseudojet making                  	                
-			
-			float E =sqrt(mcMomPx[i]*mcMomPx[i] + mcMomPy[i]*mcMomPy[i] + mcMomPz[i]*mcMomPz[i] + mcPartMass[i]*mcPartMass[i]);//energyof mc
-			fastjet::PseudoJet p(mcMomPx[i], mcMomPy[i], mcMomPz[i], E);   
-			p.set_user_index(i);
-			particles_gen.push_back(p);
-		      }
-		  
-		      TLorentzVector lv_pii, lv_kk; //making TLorentzVector of the pair pion and kaon
-		      lv_pii.SetXYZM(mcMomPx[pii_index], mcMomPy[pii_index], mcMomPz[pii_index], mcPartMass[pii_index]); 
-		      lv_kk.SetXYZM(mcMomPx[kk_index], mcMomPy[kk_index], mcMomPz[kk_index], mcPartMass[kk_index]);
-
-		      // calculating lorentz vector of the parent D0 of the pi-k pair
-		      TLorentzVector lv_D0 = lv_pii + lv_kk;	
 	
-		      if ( lv_D0.Pt() < minCstPt || lv_D0.Pt() > maxCstPt ){// if Pt of parent D0 is not in require Pt limits---> Introducing pi and k of the pair to pseudoJet making
-			
-			for (int l=0;l<2;l++){
-			  int idx;
-			  
-			  if (l==0){
-			    idx = pii_index;
-			  }
-			  
-			  if(l==1){
-			    idx = kk_index;
-			  }
-
-			  TVector3 mom(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx]);
-			  if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-
-			  float E = sqrt(mcMomPx[idx]*mcMomPx[idx] + mcMomPy[idx]*mcMomPy[idx] + mcMomPz[idx]*mcMomPz[idx] + mcPartMass[idx]*mcPartMass[idx]);
-       
-			  fastjet::PseudoJet p(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx], E);	 
-			  p.set_user_index(idx);
-			  particles_gen.push_back(p);
-			  
-			}
-		      }
-        
-                                                                                                    
-		      if ( lv_D0.Pt() > minCstPt && lv_D0.Pt() < maxCstPt ){// introducing parent D0 to pseudojets
-			
-			fastjet::PseudoJet p(lv_D0.Px(), lv_D0.Py(),lv_D0.Pz(), lv_D0.E());
-			p.set_user_index(-99999);// setting signal parent D0 index = negative integer (-99999)                                          
-			particles_gen.push_back(p);
-		      }
-		
-	                	    
-		      // Define algorithm
-		      fastjet::JetAlgorithm algo = fastjet::antikt_algorithm;
-		      fastjet::RecombinationScheme scheme = fastjet::E_scheme;
-		      // Jet definition
-		      fastjet::JetDefinition jet_def(algo, R_value, scheme);
-		      fastjet::GhostedAreaSpec ghost_spec(ghostMaxRap, numGhostRepeat, ghostArea);
-		      fastjet::AreaType atype = fastjet::active_area;
-		      fastjet::AreaDefinition area_def(atype, ghost_spec);      
-
-		      //clearing the vectors
-		      GenJet_pt.clear();
-		      GenJet_eta.clear();
-		      GenJet_phi.clear();
-		      GenJet_E.clear();
-		      GenJet_M.clear();
-		      GenJet_rapi.clear();
-		      GenJet_hasElectron.clear();
-		      GenJet_hasNeutral.clear();
-		      GenJet_maxPtPart_pt.clear();
-		      GenJet_constituent_pt.clear(); 
-		      GenJet_constituent_eta.clear();
-		      GenJet_constituent_phi.clear(); 
-		      GenJet_constituent_pdgid.clear();
-		      GenJet_constituent_rapi.clear();
-		      GenJet_constituent_idx.clear();
-		      GenJet_constituent_energy.clear();
-		      
-		      EVETMULTGEN = (int)TrkGenPx.GetSize();
-		      
-		      //Gen clustering 
-		      fastjet:: ClusterSequenceArea cs_gen(particles_gen, jet_def, area_def);
-		      std::vector<fastjet::PseudoJet> jets_gen = fastjet::sorted_by_pt(cs_gen.inclusive_jets(minJetPt));
-		      for (auto &jet : jets_gen) { //loop over genJets
-			GenJet_pt.push_back(jet.pt());
-			GenJet_eta.push_back(jet.eta());
-			GenJet_phi.push_back(jet.phi_std());
-			GenJet_E.push_back(jet.e());
-			GenJet_M.push_back(jet.m());
-			GenJet_rapi.push_back(jet.rap());
-
-	
-			bool hasGenElectron = false;
-			bool hasGenNeutral = false;
-			float maxPtGen = -1.0;
-			std::vector<float> gpt, geta, gphi,grapi,genergy;
-			std::vector<int> gpdgid,gidx;
-			gpt.clear(); geta.clear(); gphi.clear(); gpdgid.clear();gidx.clear();grapi.clear();genergy.clear();
-			
-			fastjet::PseudoJet D0_parent;
-			
-			for (auto &c : jet.constituents()) {//loop over genJetConstituents
-			  int idx = c.user_index();
-			  
-			  bool is_D0_parent = false;
-			  if(idx == -99999){     //looking for D0 parent                                                                                        
-			    for(const auto& p : particles_gen ){// loop over all the pseudojets                                                         
-
-			      if (p.user_index() == idx) {
-		  	
-				D0_parent = p;
-				is_D0_parent = true;
-				break;
-			      }
-			    }
-		
-			    gpt.push_back(D0_parent.pt());
-			    geta.push_back(D0_parent.eta());
-			    gphi.push_back(D0_parent.phi());
-			    genergy.push_back(D0_parent.E());                                             
-			    gpdgid.push_back(421);                                                                                   
-			    gidx.push_back(idx);
-			    grapi.push_back(D0_parent.rap());
-			    
-			    if (D0_parent.pt() > maxPtGen) maxPtGen = D0_parent.pt();
-			    hasGenElectron = false;
-			    hasGenNeutral = true;
-			  }
-              
-			  if (is_D0_parent) continue;// skip the rest of the loop for the parent D0
-	  
-	  
-			  TVector3 gv(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx]);
-			  TLorentzVector glv;
-			  glv.SetXYZM(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx], mcPartMass[idx]);	
-
-			  gpt.push_back(gv.Pt());
-			  geta.push_back(gv.Eta());
-			  gphi.push_back(gv.Phi());
-			  gpdgid.push_back(mcPartPdg[idx]);
-			  gidx.push_back(idx);
-			  grapi.push_back(glv.Rapidity());
-			  genergy.push_back(glv.E());
-			  
-			  if (gv.Pt() > maxPtGen) maxPtGen = gv.Pt();
-			  
-			  if (mcPartPdg[idx] == 11) hasGenElectron = true;
-			  if (mcPartCharge[idx] == 0) hasGenNeutral = true;
-			}
-			
-			GenJet_constituent_pt.push_back(gpt);
-			GenJet_constituent_eta.push_back(geta);
-			GenJet_constituent_phi.push_back(gphi);
-			GenJet_hasElectron.push_back(hasGenElectron);
-			GenJet_hasNeutral.push_back(hasGenNeutral);
-			GenJet_maxPtPart_pt.push_back(maxPtGen);
-			GenJet_constituent_pdgid.push_back(gpdgid);
-			GenJet_constituent_rapi.push_back(grapi);
-			GenJet_constituent_idx.push_back(gidx);
-			GenJet_constituent_energy.push_back(genergy);
-		      }
-		      
-		      //Gen Jet Reading
-
-		      for(int i=0;i<GenJet_eta.size();i++){//loop over all the genJets
-
-			int  jetmulti = GenJet_constituent_idx[i].size();  // Total no. of particles of the ith genJet
-     
-			float jetPt  = GenJet_pt[i];
-			float jetEta = GenJet_eta[i];
-			float jetRapi = GenJet_rapi[i];
-			float jetPhi = GenJet_phi[i];
-			float jetE = GenJet_E[i];
-			
-			TLorentzVector lvJet;
-			lvJet.SetPtEtaPhiE(jetPt,jetEta, jetPhi, jetE); // Jet TLorentzVector	  
-			TVector3 jetMom = lvJet.Vect(); // Jet Momentum Vector
-			bool c2 = false;
-			
-			for(unsigned int j=0; j<GenJet_constituent_idx[i].size(); j++){   //Loop over all particles of the ith Jet
-
-			  int genIdx = GenJet_constituent_idx[i][j]; // index of jth particle of ith jet
-			  bool isD0 = false;
-			 
-			  
-			  //check if jet constituent is the D0 parent
-			  if( genIdx == -99999 ){        
-			    isD0 = true;
-			    c2 = true;
-			  }
-	 
-			  if(isD0){  // if Jet constituent is the D0 parent
-
-			    float D0Pt  = GenJet_constituent_pt[i][j];
-			    float D0Eta = GenJet_constituent_eta[i][j];
-			    float D0Phi = GenJet_constituent_phi[i][j];
-			    float D0E = GenJet_constituent_energy[i][j];
-			    float D0Rapi = GenJet_constituent_rapi[i][j];
-	      
-			    TLorentzVector lvD0;
-			    lvD0.SetPtEtaPhiE(D0Pt, D0Eta, D0Phi, D0E);
-			    
-			    TVector3 D0_Mom;
-			    D0_Mom.SetPtEtaPhi(D0Pt, D0Eta, D0Phi);
-			    
-			    float gz = float(jetMom.Dot(D0_Mom))/float(jetMom.Dot(jetMom)) ;  // Fragmentation Variable z 
-			    cout<<"genZ = "<<gz<<endl;
-                            
-			    float dPhi = jetPhi - D0Phi;
-			    dPhi = TVector2::Phi_mpi_pi(dPhi);
-			    
-			    float dEta = jetEta - D0Eta;
-			    float drapi = jetRapi - D0Rapi;
-	      
-			    float deltaR_eta = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // D0 distance from JetAxis in eta-Phi space
-			    float deltaR_y = TMath::Sqrt(drapi*drapi + dPhi*dPhi); // D0 distance from JetAxis in y-Phi space 
-	      
-			    float angleRad = jetMom.Angle(D0_Mom); // angle bw parent D0 Momentum vector and jetMomentum vector
-			    float angleDeg = angleRad * 180.0 / TMath::Pi();
-
-			    //storing D0 parameters to branches of gen signal tree
-			    genZ_sig = gz;
-			    gdr_eta_sig = deltaR_eta;
-			    gdr_y_sig = deltaR_y;
-			    gD0jetAngle_sig = angleDeg;
-			    pt_gjet_sig = jetPt;
-			    eta_gjet_sig = jetEta;
-			    y_gjet_sig = jetRapi;
-	      
-			    break;// break the jetConstituent loop immediately the D0 parent is found
-			  }
-			}
-			if(c2) break;// break the jet loop immediately when the D0 parent is found
-		      }
-		      tree_gen_sig->Fill(); // tree filled only fill once, in the that jet case which have D0 in it
-		    }
-
-
-		  //gen BKG D0
-		  if(!is_D0_pik) 
-		    {  
-
-		    		      
-		      // PseudoJet Building
-		      std::vector<fastjet::PseudoJet> particles_gen;       
-		      for (unsigned int i = 0; i < mcPartMass.GetSize(); ++i) {
-			
-			TVector3 mom(mcMomPx[i], mcMomPy[i], mcMomPz[i]);
-			if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-			if ( mcPartCharge[i] == 0 ) continue;
-			if ( removeelectrons == 1 && mcPartPdg[i] == 11 ) continue;
-			if ( removeelectrons == 2 && i == ScatteredEGenId ) continue;
-		    
-			if(i == pii_index || i == kk_index) continue; //skipping the pi-k pair in pseudojet making                  	                
-			
-			float E =sqrt(mcMomPx[i]*mcMomPx[i] + mcMomPy[i]*mcMomPy[i] + mcMomPz[i]*mcMomPz[i] + mcPartMass[i]*mcPartMass[i]);//energyof mc
-			fastjet::PseudoJet p(mcMomPx[i], mcMomPy[i], mcMomPz[i], E);   
-			p.set_user_index(i);
-			particles_gen.push_back(p);
-		      }
-		  
-		      TLorentzVector lv_pii, lv_kk; //making TLorentzVector of the pair pion and kaon
-		      lv_pii.SetXYZM(mcMomPx[pii_index], mcMomPy[pii_index], mcMomPz[pii_index], mcPartMass[pii_index]); 
-		      lv_kk.SetXYZM(mcMomPx[kk_index], mcMomPy[kk_index], mcMomPz[kk_index], mcPartMass[kk_index]);
-
-		      // calculating lorentz vector of the parent D0 of the pi-k pair
-		      TLorentzVector lv_D0 = lv_pii + lv_kk;	
-	
-		      if ( lv_D0.Pt() < minCstPt || lv_D0.Pt() > maxCstPt ){// if Pt of parent D0 is not in require Pt limits---> Introducing pi and k of the pair to pseudoJet making
-			
-			for (int l=0;l<2;l++){
-			  int idx;
-			  
-			  if (l==0){
-			    idx = pii_index;
-			  }
-			  
-			  if(l==1){
-			    idx = kk_index;
-			  }
-
-			  TVector3 mom(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx]);
-			  if ( mom.Pt() < minCstPt || mom.Pt() > maxCstPt ) continue;
-
-			  float E = sqrt(mcMomPx[idx]*mcMomPx[idx] + mcMomPy[idx]*mcMomPy[idx] + mcMomPz[idx]*mcMomPz[idx] + mcPartMass[idx]*mcPartMass[idx]);
-       
-			  fastjet::PseudoJet p(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx], E);	 
-			  p.set_user_index(idx);
-			  particles_gen.push_back(p);
-			  
-			}
-		      }
-        
-                                                                                                    
-		      if ( lv_D0.Pt() > minCstPt && lv_D0.Pt() < maxCstPt ){// introducing parent D0 to pseudojets
-			
-			fastjet::PseudoJet p(lv_D0.Px(), lv_D0.Py(),lv_D0.Pz(), lv_D0.E());
-			p.set_user_index(-99999);// setting bkg  parent D0 index = negative integer (-99999)                                          
-			particles_gen.push_back(p);
-		      }
-		
-	                	    
-		      // Define algorithm
-		      fastjet::JetAlgorithm algo = fastjet::antikt_algorithm;
-		      fastjet::RecombinationScheme scheme = fastjet::E_scheme;
-		      // Jet definition
-		      fastjet::JetDefinition jet_def(algo, R_value, scheme);
-		      fastjet::GhostedAreaSpec ghost_spec(ghostMaxRap, numGhostRepeat, ghostArea);
-		      fastjet::AreaType atype = fastjet::active_area;
-		      fastjet::AreaDefinition area_def(atype, ghost_spec);      
-
-		      //clearing the vectors
-		      GenJet_pt.clear();
-		      GenJet_eta.clear();
-		      GenJet_phi.clear();
-		      GenJet_E.clear();
-		      GenJet_M.clear();
-		      GenJet_rapi.clear();
-		      GenJet_hasElectron.clear();
-		      GenJet_hasNeutral.clear();
-		      GenJet_maxPtPart_pt.clear();
-		      GenJet_constituent_pt.clear(); 
-		      GenJet_constituent_eta.clear();
-		      GenJet_constituent_phi.clear(); 
-		      GenJet_constituent_pdgid.clear();
-		      GenJet_constituent_rapi.clear();
-		      GenJet_constituent_idx.clear();
-		      GenJet_constituent_energy.clear();
-		      
-		      EVETMULTGEN = (int)TrkGenPx.GetSize();
-		      
-		      //Gen clustering 
-		      fastjet:: ClusterSequenceArea cs_gen(particles_gen, jet_def, area_def);
-		      std::vector<fastjet::PseudoJet> jets_gen = fastjet::sorted_by_pt(cs_gen.inclusive_jets(minJetPt));
-		      for (auto &jet : jets_gen) { //loop over genJets
-			GenJet_pt.push_back(jet.pt());
-			GenJet_eta.push_back(jet.eta());
-			GenJet_phi.push_back(jet.phi_std());
-			GenJet_E.push_back(jet.e());
-			GenJet_M.push_back(jet.m());
-			GenJet_rapi.push_back(jet.rap());
-
-	
-			bool hasGenElectron = false;
-			bool hasGenNeutral = false;
-			float maxPtGen = -1.0;
-			std::vector<float> gpt, geta, gphi,grapi,genergy;
-			std::vector<int> gpdgid,gidx;
-			gpt.clear(); geta.clear(); gphi.clear(); gpdgid.clear();gidx.clear();grapi.clear();genergy.clear();
-			
-			fastjet::PseudoJet D0_parent;
-			
-			for (auto &c : jet.constituents()) {//loop over genJetConstituents
-			  int idx = c.user_index();
-			  
-			  bool is_D0_parent = false;
-			  if(idx == -99999){     //looking for D0 parent                                                                                        
-			    for(const auto& p : particles_gen ){// loop over all the pseudojets                                                         
-
-			      if (p.user_index() == idx) {
-		  	
-				D0_parent = p;
-				is_D0_parent = true;
-				break;
-			      }
-			    }
-		
-			    gpt.push_back(D0_parent.pt());
-			    geta.push_back(D0_parent.eta());
-			    gphi.push_back(D0_parent.phi());
-			    genergy.push_back(D0_parent.E());                                             
-			    gpdgid.push_back(421);                                                                                   
-			    gidx.push_back(idx);
-			    grapi.push_back(D0_parent.rap());
-			    
-			    if (D0_parent.pt() > maxPtGen) maxPtGen = D0_parent.pt();
-			    hasGenElectron = false;
-			    hasGenNeutral = true;
-			  }
-              
-			  if (is_D0_parent) continue;// skip the rest of the loop for the parent D0
-	  
-	  
-			  TVector3 gv(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx]);
-			  TLorentzVector glv;
-			  glv.SetXYZM(mcMomPx[idx], mcMomPy[idx], mcMomPz[idx], mcPartMass[idx]);	
-
-			  gpt.push_back(gv.Pt());
-			  geta.push_back(gv.Eta());
-			  gphi.push_back(gv.Phi());
-			  gpdgid.push_back(mcPartPdg[idx]);
-			  gidx.push_back(idx);
-			  grapi.push_back(glv.Rapidity());
-			  genergy.push_back(glv.E());
-			  
-			  if (gv.Pt() > maxPtGen) maxPtGen = gv.Pt();
-			  
-			  if (mcPartPdg[idx] == 11) hasGenElectron = true;
-			  if (mcPartCharge[idx] == 0) hasGenNeutral = true;
-			}
-			
-			GenJet_constituent_pt.push_back(gpt);
-			GenJet_constituent_eta.push_back(geta);
-			GenJet_constituent_phi.push_back(gphi);
-			GenJet_hasElectron.push_back(hasGenElectron);
-			GenJet_hasNeutral.push_back(hasGenNeutral);
-			GenJet_maxPtPart_pt.push_back(maxPtGen);
-			GenJet_constituent_pdgid.push_back(gpdgid);
-			GenJet_constituent_rapi.push_back(grapi);
-			GenJet_constituent_idx.push_back(gidx);
-			GenJet_constituent_energy.push_back(genergy);
-		      }
-		      
-		      //Gen Bkg Jet Reading
-
-		      for(int i=0;i<GenJet_eta.size();i++){//loop over all the genJets
-
-			int  jetmulti = GenJet_constituent_idx[i].size();  // Total no. of particles of the ith genJet
-     
-			float jetPt  = GenJet_pt[i];
-			float jetEta = GenJet_eta[i];
-			float jetRapi = GenJet_rapi[i];
-			float jetPhi = GenJet_phi[i];
-			float jetE = GenJet_E[i];
-			
-			TLorentzVector lvJet;
-			lvJet.SetPtEtaPhiE(jetPt,jetEta, jetPhi, jetE); // Jet TLorentzVector	  
-			TVector3 jetMom = lvJet.Vect(); // Jet Momentum Vector
-			bool c2 = false;
-			
-			for(unsigned int j=0; j<GenJet_constituent_idx[i].size(); j++){   //Loop over all particles of the ith Jet
-
-			  int genIdx = GenJet_constituent_idx[i][j]; // index of jth particle of ith jet
-			  bool isD0 = false;
-			 
-			  
-			  //check if jet constituent is the D0 parent
-			  if( genIdx == -99999 ){        
-			    isD0 = true;
-			    c2 = true;
-			  }
-	 
-			  if(isD0){  // if Jet constituent is the D0 parent
-
-			    float D0Pt  = GenJet_constituent_pt[i][j];
-			    float D0Eta = GenJet_constituent_eta[i][j];
-			    float D0Phi = GenJet_constituent_phi[i][j];
-			    float D0E = GenJet_constituent_energy[i][j];
-			    float D0Rapi = GenJet_constituent_rapi[i][j];
-	      
-			    TLorentzVector lvD0;
-			    lvD0.SetPtEtaPhiE(D0Pt, D0Eta, D0Phi, D0E);
-			    
-			    TVector3 D0_Mom;
-			    D0_Mom.SetPtEtaPhi(D0Pt, D0Eta, D0Phi);
-			    
-			    float gz = float(jetMom.Dot(D0_Mom))/float(jetMom.Dot(jetMom)) ;  // Fragmentation Variable z 
-			    cout<<"genZ = "<<gz<<endl;
-                            
-			    float dPhi = jetPhi - D0Phi;
-			    dPhi = TVector2::Phi_mpi_pi(dPhi);
-			    
-			    float dEta = jetEta - D0Eta;
-			    float drapi = jetRapi - D0Rapi;
-	      
-			    float deltaR_eta = TMath::Sqrt(dEta*dEta + dPhi*dPhi); // D0 distance from JetAxis in eta-Phi space
-			    float deltaR_y = TMath::Sqrt(drapi*drapi + dPhi*dPhi); // D0 distance from JetAxis in y-Phi space 
-	      
-			    float angleRad = jetMom.Angle(D0_Mom); // angle bw parent D0 Momentum vector and jetMomentum vector
-			    float angleDeg = angleRad * 180.0 / TMath::Pi();
-
-			    //storing D0 parameters to branches of gen signal tree
-			    genZ_bkg = gz;
-			    gdr_eta_bkg = deltaR_eta;
-			    gdr_y_bkg = deltaR_y;
-			    gD0jetAngle_bkg = angleDeg;
-			    pt_gjet_bkg = jetPt;
-			    eta_gjet_bkg = jetEta;
-			    y_gjet_bkg = jetRapi;
-	      
-			    break;// break the jetConstituent loop immediately the D0 parent is found
-			  }
-			}
-			if(c2) break;// break the jet loop immediately when the D0 parent is found
-		      }
-		      tree_gen_bkg->Fill(); // tree filled only fill once, in the that jet case which have D0 in it
-		    }
-
-		}
-	    }
-	}
-
-      
-      //--------------------------------------------------GenJetClustering-----------------------------------------------------------------------------
-      cout<<nevents<<" Completed !!"<<endl;
+      cout<<nevents<< " completed !!"<< endl;	
       nevents++;
     } 
 
@@ -2272,11 +1713,6 @@ int main(int argc, char **argv)
   file_bkg->cd();  
   tree_bkg->Write();
   file_bkg->Close();
-
-  file_gen->cd();
-  tree_gen_sig->Write();
-  tree_gen_bkg->Write();
-  file_gen->Close();
   
   fout_mcgen->cd();
   tree_D0->Write();
@@ -2324,21 +1760,7 @@ int main(int argc, char **argv)
   hNRecoVtx->Write();
   h3sig_z->Write();
   h3bkg_z->Write();
-
-  hmc_eta->Write();
-  hmc_eta_e->Write();
-  hmc_eta_pi->Write();
-  hmc_eta_k->Write();
-  hmc_eta_p->Write();
-
-  hreco_eta->Write();
-  hreco_eta_e->Write();
-  hreco_eta_pi->Write();
-  hreco_eta_k->Write();
-  hreco_eta_p->Write();
-
   
-
   for(int ip=0; ip<2; ip++)
     {
       hRcSecPartLocaToRCVtx[ip]->Write();
@@ -2550,4 +1972,5 @@ void getDecayVertex_Chi2fit(const int index1, const int index2, double &s1, doub
    vertex.SetXYZ(parFit[0], parFit[1], parFit[2]);
    s1 = parFit[3]; s2 = parFit[4];
 }
+
 
